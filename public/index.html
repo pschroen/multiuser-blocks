@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="An experiment to combine physics, UI and data visualization elements in a multiuser environment.">
+
+  <title>Multiuser Blocks</title>
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://multiuser-blocks.glitch.me/">
+  <meta property="og:site_name" content="Multiuser Blocks">
+  <meta property="og:title" content="Multiuser Blocks">
+  <meta property="og:description" content="An experiment to combine physics, UI and data visualization elements in a multiuser environment.">
+  <meta property="og:image" content="https://multiuser-blocks.glitch.me/assets/meta/share.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@pschroen">
+  <meta name="twitter:creator" content="@pschroen">
+
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module">
+    import { Preloader } from './assets/js/loader.js';
+
+    Preloader.init();
+  </script>
+  <script>
+    try {
+      eval('(async () => {try {await import(\'foo\');} catch (e) {}})();');
+    } catch (e) {
+      location.href = 'unsupported.html';
+    }
+  </script>
+</body>
+</html>

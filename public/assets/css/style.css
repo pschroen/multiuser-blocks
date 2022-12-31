@@ -1,0 +1,85 @@
+@font-face {
+  font-family: 'D-DIN';
+  font-style: normal;
+  font-weight: 400;
+  src: url(../fonts/D-DIN.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'Gothic A1';
+  font-style: normal;
+  font-weight: 500;
+  src: url(../fonts/GothicA1-Medium.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'Gothic A1';
+  font-style: normal;
+  font-weight: 700;
+  src: url(../fonts/GothicA1-Bold.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'Roboto Mono';
+  font-style: normal;
+  font-weight: 500;
+  src: url(../fonts/RobotoMono-Medium.woff2) format('woff2');
+}
+
+:root {
+  --main-bg-color: #111;
+  --main-color: rgba(255, 255, 255, 0.94);
+  --main-color-triplet: 255, 255, 255;
+  --main-selection-bg-color: rgba(255, 255, 255, 0.94);
+  --main-selection-color: #000;
+  --main-invert-light-color: #000;
+  --main-invert-light-color-triplet: 0, 0, 0;
+  --main-invert-dark-color: rgba(255, 255, 255, 0.94);
+  --main-invert-dark-color-triplet: 255, 255, 255;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+  position: fixed;
+  font-family: 'Gothic A1', sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.6;
+  background-color: var(--main-bg-color);
+  color: var(--main-color);
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root, #root * {
+  position: absolute;
+  outline: none;
+  border: none;
+  box-sizing: border-box;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
+}
+
+#root br, #root span, #root a {
+  position: relative;
+  display: inline-block;
+}
+
+#root a, #root a:hover, #root a:focus {
+  color: var(--main-color);
+}
+
+::selection {
+  background-color: var(--main-selection-bg-color);
+  color: var(--main-selection-color);
+}
