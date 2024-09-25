@@ -10,7 +10,10 @@ This is a remix of Multiuser Fluid
 [https://glitch.com/edit/#!/multiuser-fluid](https://glitch.com/edit/#!/multiuser-fluid)
 
 Alien.js MVC design pattern  
-[https://github.com/pschroen/alien.js](https://github.com/pschroen/alien.js)
+[https://github.com/alienkitty/alien.js](https://github.com/alienkitty/alien.js)
+
+Space.js UI  
+[https://github.com/alienkitty/space.js](https://github.com/alienkitty/space.js)
 
 OimoPhysics  
 [https://github.com/saharan/OimoPhysics](https://github.com/saharan/OimoPhysics)

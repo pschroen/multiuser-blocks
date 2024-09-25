@@ -13,10 +13,11 @@
   "author": "pschroen",
   "private": true,
   "repository": {
-    "url": "https://glitch.com/edit/#!/multiuser-blocks"
+    "type": "git",
+    "url": "https://github.com/pschroen/multiuser-blocks"
   },
-  "engines": {
-    "node": "16.x"
+  "bugs": {
+    "url": "https://github.com/pschroen/multiuser-blocks/issues"
   },
   "type": "module",
   "main": "server.js",
@@ -27,15 +28,17 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.17.3",
-    "express-ws": "^5.0.2",
+    "@alienkitty/alien.js": "alienkitty/alien.js#dev",
+    "@alienkitty/space.js": "alienkitty/space.js#dev",
+    "express": "latest",
+    "express-ws": "latest",
     "oimophysics": "saharan/OimoPhysics",
-    "three": "^0.138.2"
+    "three": "latest"
   },
   "devDependencies": {
-    "@rollup/plugin-node-resolve": "^13.1.3",
-    "concurrently": "^7.0.0",
-    "rollup": "^2.68.0",
-    "rollup-plugin-bundleutils": "^1.2.4"
+    "@rollup/plugin-node-resolve": "latest",
+    "concurrently": "latest",
+    "rollup": "latest",
+    "rollup-plugin-bundleutils": "latest"
   }
 }
