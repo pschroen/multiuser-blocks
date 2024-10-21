@@ -1,9 +1,7 @@
 import { Vector2, Vector3 } from 'three';
+import { tween } from '@alienkitty/space.js/three';
 
-import { Config } from '../../config/Config.js';
-import { Stage } from '../Stage.js';
-
-import { tween } from '../../tween/Tween.js';
+import { breakpoint, isOrbit } from '../../config/Config.js';
 
 export class CameraController {
   static init(camera) {
@@ -20,47 +18,29 @@ export class CameraController {
     this.lerpStrength = 0;
     this.enabled = false;
 
-    // Start position
-    this.camera.fov = 45;
-    this.camera.updateProjectionMatrix();
-
     this.addListeners();
   }
 
   static addListeners() {
-    if (Config.ORBIT) {
+    if (isOrbit) {
       return;
     }
 
-    Stage.element.addEventListener('pointerdown', this.onPointerDown);
     window.addEventListener('pointermove', this.onPointerMove);
-    window.addEventListener('pointerup', this.onPointerUp);
   }
 
-  /**
-   * Event handlers
-   */
-
-  static onPointerDown = e => {
-    this.onPointerMove(e);
-  };
+  // Event handlers
 
   static onPointerMove = ({ clientX, clientY }) => {
     if (!this.enabled) {
       return;
     }
 
-    this.mouse.x = (clientX / Stage.width) * 2 - 1;
-    this.mouse.y = 1 - (clientY / Stage.height) * 2;
+    this.mouse.x = (clientX / document.documentElement.clientWidth) * 2 - 1;
+    this.mouse.y = 1 - (clientY / document.documentElement.clientHeight) * 2;
   };
 
-  static onPointerUp = e => {
-    this.onPointerMove(e);
-  };
-
-  /**
-   * Public methods
-   */
+  // Public methods
 
   static resize = (width, height) => {
     this.camera.aspect = width / height;
@@ -69,7 +49,7 @@ export class CameraController {
     if (width < height) {
       this.camera.position.y = 7;
       this.targetXY.x = 1;
-    } else if (width < Config.BREAKPOINT) {
+    } else if (width < breakpoint) {
       this.camera.position.y = 7;
       this.targetXY.x = 2;
     } else {
@@ -94,8 +74,13 @@ export class CameraController {
     this.camera.lookAt(this.lookAt);
   };
 
+  static start = () => {
+    this.camera.fov = 45;
+    this.camera.updateProjectionMatrix();
+  };
+
   static animateIn = () => {
-    if (Config.ORBIT) {
+    if (isOrbit) {
       return;
     }
 

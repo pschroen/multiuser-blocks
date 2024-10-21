@@ -1,43 +1,31 @@
-import { Device } from '../config/Device.js';
-import { Events } from '../config/Events.js';
-import { Global } from '../config/Global.js';
-import { Tests } from '../config/Tests.js';
-import { Assets } from '../loaders/Assets.js';
-import { Thread } from '../utils/Thread.js';
-import { ImageBitmapLoaderThread } from '../loaders/ImageBitmapLoaderThread.js';
-import { BufferGeometryLoaderThread } from '../loaders/world/BufferGeometryLoaderThread.js';
-import { WebAudio } from '../utils/audio/WebAudio.js';
+import { BufferGeometryLoaderThread, ImageBitmapLoaderThread, Stage, Thread, UI, WebAudio, ticker, wait } from '@alienkitty/space.js/three';
+
 import { AudioController } from './audio/AudioController.js';
 import { WorldController } from './world/WorldController.js';
 import { CameraController } from './world/CameraController.js';
-import { InputManager } from './world/InputManager.js';
-import { RenderManager } from './world/RenderManager.js';
 import { SceneController } from './scene/SceneController.js';
 import { DisplayController } from './display/DisplayController.js';
+import { InputManager } from './world/InputManager.js';
+import { RenderManager } from './world/RenderManager.js';
 import { PanelController } from './panel/PanelController.js';
-import { Stage } from './Stage.js';
 import { SceneView } from '../views/SceneView.js';
 import { DisplayView } from '../views/DisplayView.js';
-import { Trackers } from '../views/Trackers.js';
-import { UI } from '../views/UI.js';
+import { TrackersView } from '../views/TrackersView.js';
+import { HeaderColor } from '../views/ui/HeaderColor.js';
 
-import { ticker } from '../tween/Ticker.js';
-import { wait } from '../tween/Tween.js';
+import { breakpoint, isHighQuality, store } from '../config/Config.js';
 
 // Thread
-export { EventEmitter } from '../utils/EventEmitter.js';
+export { EventEmitter } from '@alienkitty/space.js/three';
 
 export class App {
   static async init(loader) {
     this.loader = loader;
 
     const sound = localStorage.getItem('sound');
-    Global.SOUND = sound ? JSON.parse(sound) : true;
+    store.sound = sound ? JSON.parse(sound) : true;
 
-    if (!Device.agent.includes('firefox')) {
-      this.initThread();
-    }
-
+    this.initThread();
     this.initWorld();
     this.initViews();
     this.initControllers();
@@ -45,30 +33,29 @@ export class App {
     this.addListeners();
     this.onResize();
 
-    await this.loader.ready();
-
-    WebAudio.init(Assets.filter(path => /sounds/.test(path)), { sampleRate: 48000 });
-    AudioController.init(this.view);
-
     await Promise.all([
+      document.fonts.ready,
       SceneController.ready(),
       DisplayController.ready(),
-      WorldController.textureLoader.ready(),
-      WorldController.environmentLoader.ready()
+      this.loader.ready()
     ]);
 
+    await WorldController.ready();
+
+    this.initAudio();
+    this.initPanel();
+
+    CameraController.start();
     SceneController.start();
     InputManager.start();
-
-    this.initPanel();
+    RenderManager.start();
   }
 
   static initThread() {
     ImageBitmapLoaderThread.init();
     BufferGeometryLoaderThread.init();
 
-    Thread.count--; // Make room for the physics thread
-    Thread.shared();
+    Thread.count--; // Make room for the websocket thread
   }
 
   static initWorld() {
@@ -83,11 +70,47 @@ export class App {
     this.display = new DisplayView();
     WorldController.displayScene.add(this.display);
 
-    this.trackers = new Trackers();
+    this.trackers = new TrackersView();
     Stage.add(this.trackers);
 
-    this.ui = new UI(this.display, this.trackers);
+    this.ui = new UI({
+      fps: true,
+      breakpoint,
+      details: {
+        background: true,
+        title: 'Multiuser Blocks'.replace(/[\s.]+/g, '_'),
+        content: /* html */ `
+A follow-up experiment to Multiuser Fluid. Multiuser Blocks is an experiment to combine physics, UI and data visualization elements in a multiuser environment.
+        `,
+        links: [
+          {
+            title: 'Source code',
+            link: 'https://github.com/pschroen/multiuser-blocks'
+          },
+          {
+            title: 'Multiuser Fluid',
+            link: 'https://github.com/pschroen/multiuser-fluid'
+          },
+          {
+            title: 'OimoPhysics',
+            link: 'https://github.com/saharan/OimoPhysics'
+          }
+        ]
+      },
+      detailsButton: true,
+      muteButton: {
+        sound: store.sound
+      }
+    });
     Stage.add(this.ui);
+
+    this.color = new HeaderColor(this.display);
+    this.color.css({
+      x: -10,
+      opacity: 0
+    });
+    this.ui.header.add(this.color);
+    this.ui.header.color = this.color;
   }
 
   static initControllers() {
@@ -100,8 +123,17 @@ export class App {
     RenderManager.init(renderer, scene, camera, displayScene, displayCamera);
   }
 
+  static initAudio() {
+    const { camera } = WorldController;
+
+    WebAudio.init({ sampleRate: 48000 });
+    WebAudio.load(this.loader.filter(path => /sounds/.test(path)));
+
+    AudioController.init(camera, this.view, this.ui);
+  }
+
   static initPanel() {
-    if (!Tests.highQuality) {
+    if (!isHighQuality) {
       return;
     }
 
@@ -111,23 +143,64 @@ export class App {
   }
 
   static addListeners() {
-    Stage.events.on(Events.RESIZE, this.onResize);
+    Stage.events.on('update', this.onUsers);
+    Stage.events.on('details', this.onDetails);
+    Stage.events.on('ui', this.onUI);
+    this.ui.muteButton.events.on('update', this.onMute);
+    window.addEventListener('resize', this.onResize);
     ticker.add(this.onUpdate);
   }
 
-  /**
-   * Event handlers
-   */
+  // Event handlers
+
+  static onUsers = e => {
+    this.ui.detailsButton.setData({ count: e.length });
+  };
+
+  static onDetails = ({ open }) => {
+    if (open) {
+      this.trackers.animateIn();
+
+      if (store.sound) {
+        AudioController.trigger('about_section');
+      }
+    } else {
+      if (this.ui.animatedIn) { // Keep trackers when UI is hidden
+        this.trackers.animateOut();
+      }
+
+      if (store.sound) {
+        AudioController.trigger('blocks_section');
+      }
+    }
+  };
+
+  static onUI = ({ open }) => {
+    DisplayController.toggle(open);
+  };
+
+  static onMute = ({ sound }) => {
+    if (sound) {
+      AudioController.unmute();
+    } else {
+      AudioController.mute();
+    }
+
+    localStorage.setItem('sound', JSON.stringify(sound));
+
+    store.sound = sound;
+  };
 
   static onResize = () => {
-    const { width, height } = Stage;
+    const width = document.documentElement.clientWidth;
+    const height = document.documentElement.clientHeight;
 
     let dpr;
 
-    if (Device.tablet) {
-      dpr = 1;
+    if (isHighQuality) {
+      dpr = window.devicePixelRatio;
     } else {
-      dpr = Stage.dpr;
+      dpr = 1;
     }
 
     WorldController.resize(width, height, dpr);
@@ -144,24 +217,24 @@ export class App {
     DisplayController.update();
     InputManager.update(time);
     RenderManager.update(time, delta, frame);
-
     this.ui.update();
   };
 
-  /**
-   * Public methods
-   */
+  // Public methods
 
   static start = async () => {
-    AudioController.trigger('blocks_start');
-    AudioController.trigger('cymbal');
+    AudioController.start();
+  };
+
+  static animateIn = async () => {
+    this.color.animateIn();
     CameraController.animateIn();
     SceneController.animateIn();
     InputManager.animateIn();
-    RenderManager.animateIn();
 
     await wait(1000);
 
+    RenderManager.animateIn();
     DisplayController.animateIn();
     this.ui.animateIn();
   };

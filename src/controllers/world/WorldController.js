@@ -1,14 +1,8 @@
-import { ACESFilmicToneMapping, AmbientLight, BasicShadowMap, Color, DirectionalLight, HemisphereLight, OrthographicCamera, PerspectiveCamera, PlaneGeometry, Scene, Uniform, Vector2, WebGLRenderer } from 'three';
-
+import { ACESFilmicToneMapping, AmbientLight, BasicShadowMap, Color, ColorManagement, DirectionalLight, HemisphereLight, LinearSRGBColorSpace, OrthographicCamera, PerspectiveCamera, PlaneGeometry, Scene, Vector2, WebGLRenderer } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { BufferGeometryLoader, EnvironmentTextureLoader, Stage, TextureLoader, getFullscreenTriangle } from '@alienkitty/space.js/three';
 
-import { Config } from '../../config/Config.js';
-import { TextureLoader } from '../../loaders/world/TextureLoader.js';
-import { EnvironmentTextureLoader } from '../../loaders/world/EnvironmentTextureLoader.js';
-import { BufferGeometryLoader } from '../../loaders/world/BufferGeometryLoader.js';
-import { Stage } from '../Stage.js';
-
-import { getFullscreenTriangle } from '../../utils/world/Utils3D.js';
+import { isOrbit } from '../../config/Config.js';
 
 export class WorldController {
   static init() {
@@ -23,26 +17,27 @@ export class WorldController {
 
   static initWorld() {
     this.renderer = new WebGLRenderer({
-      powerPreference: 'high-performance',
-      stencil: false
+      powerPreference: 'high-performance'
     });
+
+    // Output canvas
     this.element = this.renderer.domElement;
 
-    // Clear color
-    this.renderer.autoClear = false;
-    this.renderer.setClearColor(0x000000, 0);
-
-    // Shadows
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = BasicShadowMap;
+    // Disable color management
+    ColorManagement.enabled = false;
+    this.renderer.outputColorSpace = LinearSRGBColorSpace;
 
     // Tone mapping
     this.renderer.toneMapping = ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1;
 
+    // Shadows
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = BasicShadowMap;
+
     // 3D scene
     this.scene = new Scene();
-    this.scene.background = new Color(Stage.rootStyle.getPropertyValue('--main-bg-color').trim());
+    this.scene.background = new Color(Stage.rootStyle.getPropertyValue('--bg-color').trim());
     this.camera = new PerspectiveCamera(30);
     this.camera.near = 0.5;
     this.camera.far = 40;
@@ -60,10 +55,11 @@ export class WorldController {
     this.screenTriangle = getFullscreenTriangle();
 
     // Global uniforms
-    this.resolution = new Uniform(new Vector2());
-    this.aspect = new Uniform(1);
-    this.time = new Uniform(0);
-    this.frame = new Uniform(0);
+    this.resolution = { value: new Vector2() };
+    this.texelSize = { value: new Vector2() };
+    this.aspect = { value: 1 };
+    this.time = { value: 0 };
+    this.frame = { value: 0 };
 
     // Global settings
     this.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
@@ -85,47 +81,48 @@ export class WorldController {
   }
 
   static initLoaders() {
-    this.textureLoader = new TextureLoader().setOptions({ preserveData: true });
+    this.textureLoader = new TextureLoader();
+    this.textureLoader.setOptions({
+      preserveData: true
+    });
+    this.textureLoader.cache = true;
+
     this.environmentLoader = new EnvironmentTextureLoader(this.renderer);
     this.bufferGeometryLoader = new BufferGeometryLoader();
   }
 
   static async initEnvironment() {
-    this.scene.environment = await this.loadEnvironmentTexture('assets/textures/env.jpg');
+    this.scene.environment = await this.loadEnvironmentTexture('assets/textures/env/jewelry_black_contrast.jpg');
+    this.scene.environmentIntensity = 1;
   }
 
   static initControls() {
-    if (!Config.ORBIT) {
+    if (!isOrbit) {
       return;
     }
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
-    // this.controls.enableZoom = false;
-    // this.controls.enabled = false;
   }
 
   static addListeners() {
     this.renderer.domElement.addEventListener('touchstart', this.onTouchStart);
   }
 
-  /**
-   * Event handlers
-   */
+  // Event handlers
 
   static onTouchStart = e => {
     e.preventDefault();
   };
 
-  /**
-   * Public methods
-   */
+  // Public methods
 
   static resize = (width, height, dpr) => {
     width = Math.round(width * dpr);
     height = Math.round(height * dpr);
 
     this.resolution.value.set(width, height);
+    this.texelSize.value.set(1 / width, 1 / height);
     this.aspect.value = width / height;
   };
 
@@ -137,6 +134,13 @@ export class WorldController {
       this.controls.update();
     }
   };
+
+  static ready = () => Promise.all([
+    this.textureLoader.ready(),
+    this.environmentLoader.ready()
+  ]);
+
+  // Global handlers
 
   static getTexture = (path, callback) => this.textureLoader.load(path, callback);
 

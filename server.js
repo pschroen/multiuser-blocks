@@ -273,7 +273,7 @@ function ip2long(ip) {
 
 //
 
-import { OimoPhysicsBuffer } from './src/utils/physics/OimoPhysicsBuffer.js';
+import { OimoPhysicsBuffer } from '@alienkitty/alien.js/three/oimophysics';
 
 const shapes = [
   { name: 'room_0', type: 'box', position: [-7, 0, 0], quaternion: [0, 0.13052619222005157, 0, 0.9914448613738104], size: [2.5, 12, 12], density: 0 },
@@ -305,7 +305,7 @@ const shapes = [
     { name: 'awwwards_4', type: 'box', position: [-0.3305, 0.234, 0], quaternion: [0, 0, -0.5894078684164374, 0.8078356049647673], size: [0.01375, 0.01375, 0.125] },
     { name: 'awwwards_5', type: 'box', position: [0.33, 0.234, 0], quaternion: [0, 0, 0.5894078684164374, 0.8078356049647673], size: [0.01375, 0.01375, 0.125] }
   ], density: 1, autoSleep: false },
-  { name: 'block_2', type: 'sphere', position: [0.208, 0.083, 1.125], quaternion: [0, 0, 0, 1], size: 0.085, density: 1, autoSleep: false },
+  { name: 'block_2', type: 'sphere', position: [0.208, 0.083, 1.125], quaternion: [0, 0, 0, 1], size: [0.085], density: 1, autoSleep: false },
   { name: 'block_3', type: 'box', position: [-2.25, 2.25, 0], quaternion: [0, 0, 0, 1], size: [0.25, 0.25, 0.25], density: 1, autoSleep: false },
   { name: 'block_4', type: 'box', position: [-1.75, 2.25, 0], quaternion: [0, 0, 0, 1], size: [0.25, 0.25, 0.25], density: 1, autoSleep: false },
   { name: 'block_5', type: 'box', position: [-1.25, 2.25, 0], quaternion: [0, 0, 0, 1], size: [0.25, 0.25, 0.25], density: 1, autoSleep: false },
@@ -408,9 +408,7 @@ class Block {
     physics.setContactCallback(name, this.onContact);
   }
 
-  /**
-   * Event handlers
-   */
+  // Event handlers
 
   onContact = (body, name) => {
     if (this.contact) {

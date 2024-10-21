@@ -1,21 +1,21 @@
-export class Config {
-  static LIGHT_COLOR = 0xf44336;
+export const isMobile = !!navigator.maxTouchPoints;
+export const isTablet = isMobile && Math.max(window.innerWidth, window.innerHeight) > 1000;
+export const isPhone = isMobile && !isTablet;
+export const isHighQuality = navigator.hardwareConcurrency > 4 || (!navigator.hardwareConcurrency && !isTablet);
+export const isOrbit = /[?&]orbit/.test(location.search);
+export const isDebug = /[?&]debug/.test(location.search);
 
-  static BREAKPOINT = 1000;
+export const lightColor = 0xf44336;
+export const breakpoint = 1000;
+export const numPointers = 22; // iOS limit
 
-  static ASSETS = [
-    'assets/textures/env.jpg',
-    'assets/textures/waterdudv.jpg',
-    'assets/textures/pbr/pitted_metal_basecolor.jpg',
-    'assets/textures/pbr/pitted_metal_normal.jpg',
-    'assets/textures/pbr/pitted_metal_orm.jpg',
-    'assets/textures/pbr/pitted_metal_height.jpg',
-    'assets/textures/lens_dirt.jpg',
-    'assets/sounds/cymbal.mp3',
-    'assets/sounds/nebulous_loop.mp3',
-    'assets/sounds/gong.mp3'
-  ];
+export const store = {
+  users: [],
+  sound: true,
+  color: ''
+};
 
-  static ORBIT = /[?&]orbit/.test(location.search);
-  static DEBUG = /[?&]debug/.test(location.search);
-}
+export const layers = {
+  default: 0,
+  picking: 1
+};

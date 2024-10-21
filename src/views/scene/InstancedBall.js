@@ -1,16 +1,17 @@
-import { Color, DynamicDrawUsage, Group, IcosahedronGeometry, InstancedBufferAttribute, InstancedMesh, Matrix4, MeshPhongMaterial, PointLight, ShaderChunk, Uniform } from 'three';
+import { Color, DynamicDrawUsage, Group, IcosahedronGeometry, InstancedBufferAttribute, InstancedMesh, Matrix4, MeshPhongMaterial, PointLight, ShaderChunk } from 'three';
 
-import { Config } from '../../config/Config.js';
-import { Global } from '../../config/Global.js';
+import { lightColor, numPointers } from '../../config/Config.js';
 
 export class InstancedBall extends Group {
   constructor() {
     super();
 
-    this.radius = 0.075;
     this.intensity = 0.2;
-    this.color = new Color(Config.LIGHT_COLOR);
+    this.color = new Color(lightColor);
     this.lights = [];
+
+    // Physics
+    this.radius = 0.075;
   }
 
   async initMesh() {
@@ -22,20 +23,20 @@ export class InstancedBall extends Group {
       color: new Color().offsetHSL(0, 0, -0.65)
     });
 
-    // Based on {@link module:three/examples/jsm/shaders/SubsurfaceScatteringShader.js} by daoshengmu
+    // Based on https://github.com/mrdoob/three.js/blob/dev/examples/jsm/shaders/SubsurfaceScatteringShader.js by daoshengmu
 
     material.onBeforeCompile = shader => {
-      shader.uniforms.thicknessDistortion = new Uniform(0.1);
-      shader.uniforms.thicknessAmbient = new Uniform(0);
-      shader.uniforms.thicknessAttenuation = new Uniform(0.8);
-      shader.uniforms.thicknessPower = new Uniform(2);
-      shader.uniforms.thicknessScale = new Uniform(16);
+      shader.uniforms.thicknessDistortion = { value: 0.1 };
+      shader.uniforms.thicknessAmbient = { value: 0 };
+      shader.uniforms.thicknessAttenuation = { value: 0.8 };
+      shader.uniforms.thicknessPower = { value: 2 };
+      shader.uniforms.thicknessScale = { value: 16 };
 
       // https://github.com/mrdoob/three.js/pull/22147/files
 
       shader.vertexShader = shader.vertexShader.replace(
         '#include <common>',
-        /* glsl */`
+        /* glsl */ `
         attribute float instanceVisibility;
         varying float vInstanceVisibility;
         varying vec3 vLightPosition;
@@ -45,7 +46,7 @@ export class InstancedBall extends Group {
 
       shader.vertexShader = shader.vertexShader.replace(
         '#include <begin_vertex>',
-        /* glsl */`
+        /* glsl */ `
         #include <begin_vertex>
         vInstanceVisibility = instanceVisibility;
         vLightPosition = instanceMatrix[3].xyz;
@@ -54,7 +55,7 @@ export class InstancedBall extends Group {
 
       shader.fragmentShader = shader.fragmentShader.replace(
         '#include <common>',
-        /* glsl */`
+        /* glsl */ `
         varying float vInstanceVisibility;
         varying vec3 vLightPosition;
         #include <common>
@@ -63,7 +64,7 @@ export class InstancedBall extends Group {
 
       shader.fragmentShader = shader.fragmentShader.replace(
         'vec4 diffuseColor = vec4( diffuse, opacity );',
-        /* glsl */`
+        /* glsl */ `
         if (vInstanceVisibility == 0.0) discard;
         vec4 diffuseColor = vec4( diffuse, opacity );
         `
@@ -71,15 +72,15 @@ export class InstancedBall extends Group {
 
       shader.fragmentShader = shader.fragmentShader.replace(
         'void main() {',
-        /* glsl */`
+        /* glsl */ `
         uniform float thicknessDistortion;
         uniform float thicknessAmbient;
         uniform float thicknessAttenuation;
         uniform float thicknessPower;
         uniform float thicknessScale;
 
-        void getPointLightInfo(GeometricContext geometry, out IncidentLight light) {
-          vec3 lVector = (viewMatrix * vec4(vLightPosition, 1.0)).xyz - geometry.position;
+        void getPointLightInfo(vec3 geometryPosition, vec3 geometryNormal, vec3 geometryViewDir, vec3 geometryClearcoatNormal, out IncidentLight light) {
+          vec3 lVector = (viewMatrix * vec4(vLightPosition, 1.0)).xyz - geometryPosition;
           light.direction = normalize(lVector);
           float lightDistance = length(lVector);
           light.color = vColor * ${(this.intensity * Math.PI).toFixed(2)};
@@ -87,10 +88,10 @@ export class InstancedBall extends Group {
           light.visible = (light.color != vec3(0.0));
         }
 
-        void RE_Direct_Scattering(IncidentLight directLight, GeometricContext geometry, inout ReflectedLight reflectedLight) {
+        void RE_Direct_Scattering(IncidentLight directLight, vec3 geometryPosition, vec3 geometryNormal, vec3 geometryViewDir, vec3 geometryClearcoatNormal, inout ReflectedLight reflectedLight) {
           vec3 thickness = directLight.color * vInstanceVisibility;
-          vec3 scatteringHalf = normalize(directLight.direction + (geometry.normal * thicknessDistortion));
-          float scatteringDot = pow(saturate(dot(geometry.viewDir, -scatteringHalf)), thicknessPower) * thicknessScale;
+          vec3 scatteringHalf = normalize(directLight.direction + (geometryNormal * thicknessDistortion));
+          float scatteringDot = pow(saturate(dot(geometryViewDir, -scatteringHalf)), thicknessPower) * thicknessScale;
           vec3 scatteringIllu = (scatteringDot + thicknessAmbient) * thickness;
           reflectedLight.directDiffuse += scatteringIllu * thicknessAttenuation * directLight.color;
         }
@@ -102,34 +103,34 @@ export class InstancedBall extends Group {
       shader.fragmentShader = shader.fragmentShader.replace(
         '#include <lights_fragment_begin>',
         ShaderChunk.lights_fragment_begin.replaceAll(
-          'RE_Direct( directLight, geometry, material, reflectedLight );',
-          /* glsl */`
-          // RE_Direct( directLight, geometry, material, reflectedLight );
-          // RE_Direct_Scattering(directLight, geometry, reflectedLight);
+          'RE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );',
+          /* glsl */ `
+          // RE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );
+          // RE_Direct_Scattering(directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, reflectedLight);
           `
         )
       );
 
       shader.fragmentShader = shader.fragmentShader.replace(
         'vec3 totalEmissiveRadiance = emissive;',
-        /* glsl */`
+        /* glsl */ `
         vec3 totalEmissiveRadiance = vColor * 0.32; // 0.8 * 0.4
         `
       );
 
       shader.fragmentShader = shader.fragmentShader.replace(
         'vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;',
-        /* glsl */`
+        /* glsl */ `
         IncidentLight incidentLight;
-        getPointLightInfo(geometry, incidentLight);
-        RE_Direct_Scattering(incidentLight, geometry, reflectedLight);
+        getPointLightInfo(geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, incidentLight);
+        RE_Direct_Scattering(incidentLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, reflectedLight);
 
         vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
         `
       );
     };
 
-    const mesh = new InstancedMesh(geometry, material, Global.NUM_POINTERS);
+    const mesh = new InstancedMesh(geometry, material, numPointers);
     mesh.instanceMatrix.setUsage(DynamicDrawUsage); // Will be updated every frame
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -146,7 +147,7 @@ export class InstancedBall extends Group {
       instanceVisibilities.push(0);
 
       // Not used by the ball shader itself but for lighting the blocks
-      const light = new PointLight(Config.LIGHT_COLOR, this.intensity);
+      const light = new PointLight(lightColor, this.intensity);
       light.visible = false;
       this.add(light);
 
@@ -160,9 +161,7 @@ export class InstancedBall extends Group {
     this.mesh = mesh;
   }
 
-  /**
-   * Public methods
-   */
+  // Public methods
 
   ready = () => this.initMesh();
 }

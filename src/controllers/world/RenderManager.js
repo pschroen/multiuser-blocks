@@ -1,16 +1,12 @@
-import { MathUtils, Mesh, OrthographicCamera, Scene, Vector2, WebGLRenderTarget } from 'three';
+import { MathUtils, Mesh, OrthographicCamera, Vector2, WebGLRenderTarget } from 'three';
+import { tween } from '@alienkitty/space.js/three';
+import { BloomCompositeMaterial, FXAAMaterial, LuminosityMaterial, UnrealBloomBlurMaterial } from '@alienkitty/alien.js/three';
 
-import { Tests } from '../../config/Tests.js';
 import { WorldController } from './WorldController.js';
-import { FXAAMaterial } from '../../materials/FXAAMaterial.js';
-import { LuminosityMaterial } from '../../materials/LuminosityMaterial.js';
-import { UnrealBloomBlurMaterial } from '../../materials/UnrealBloomBlurMaterial.js';
-import { BloomCompositeMaterial } from '../../materials/BloomCompositeMaterial.js';
 import { CompositeMaterial } from '../../materials/CompositeMaterial.js';
 import { DirtMaterial } from '../../materials/DirtMaterial.js';
 
-import { tween } from '../../tween/Tween.js';
-import { mix } from '../../utils/Utils.js';
+import { isHighQuality } from '../../config/Config.js';
 
 const BlurDirectionX = new Vector2(1, 0);
 const BlurDirectionY = new Vector2(0, 1);
@@ -23,38 +19,42 @@ export class RenderManager {
     this.displayScene = displayScene;
     this.displayCamera = displayCamera;
 
+    // Bloom
     this.luminosityThreshold = 0.1;
     this.luminositySmoothing = 1;
     this.bloomStrength = 0.3;
     this.bloomRadius = 0.75;
     this.bloomDistortion = 1;
+
+    // Final
     this.distortion = 0.2;
     this.boost = 1.1;
     this.reduction = 0.9;
     this.grainAmount = 0.03;
 
     this.initRenderer();
-
-    this.start();
   }
 
   static initRenderer() {
-    const { screenTriangle, resolution, time } = WorldController;
+    const { screenTriangle, resolution } = WorldController;
+
+    // Manually clear
+    this.renderer.autoClear = false;
+
+    // Clear colors
+    this.renderer.setClearColor(0x000000, 0);
 
     // Fullscreen triangle
-    this.screenScene = new Scene();
     this.screenCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
-
     this.screen = new Mesh(screenTriangle);
     this.screen.frustumCulled = false;
-    this.screenScene.add(this.screen);
 
     // Render targets
     this.renderTargetA = new WebGLRenderTarget(1, 1, {
       depthBuffer: false
     });
 
-    if (Tests.highQuality) {
+    if (isHighQuality) {
       this.renderTargetB = this.renderTargetA.clone();
 
       this.renderTargetsHorizontal = [];
@@ -79,7 +79,7 @@ export class RenderManager {
       this.luminosityMaterial.uniforms.uThreshold.value = this.luminosityThreshold;
       this.luminosityMaterial.uniforms.uSmoothing.value = this.luminositySmoothing;
 
-      // Gaussian blur materials
+      // Separable Gaussian blur materials
       this.blurMaterials = [];
 
       const kernelSizeArray = [3, 5, 7, 9, 11];
@@ -89,7 +89,7 @@ export class RenderManager {
       }
 
       // Bloom composite material
-      this.bloomCompositeMaterial = new BloomCompositeMaterial(this.nMips);
+      this.bloomCompositeMaterial = new BloomCompositeMaterial();
       this.bloomCompositeMaterial.uniforms.tBlur1.value = this.renderTargetsVertical[0].texture;
       this.bloomCompositeMaterial.uniforms.tBlur2.value = this.renderTargetsVertical[1].texture;
       this.bloomCompositeMaterial.uniforms.tBlur3.value = this.renderTargetsVertical[2].texture;
@@ -103,12 +103,10 @@ export class RenderManager {
       this.compositeMaterial.uniforms.uBoost.value = this.boost;
       this.compositeMaterial.uniforms.uReduction.value = this.reduction;
       this.compositeMaterial.uniforms.uGrainAmount.value = this.grainAmount;
-      this.compositeMaterial.uniforms.uTime = time;
 
       // Dirt material
       this.dirtMaterial = new DirtMaterial();
       this.dirtMaterial.uniforms.uDistortion.value = this.bloomDistortion;
-      this.dirtMaterial.uniforms.uResolution = resolution;
     } else {
       this.renderTargetA.depthBuffer = true;
 
@@ -123,15 +121,13 @@ export class RenderManager {
 
     for (let i = 0, l = this.nMips; i < l; i++) {
       const factor = bloomFactors[i];
-      bloomFactors[i] = this.bloomStrength * mix(factor, 1.2 - factor, this.bloomRadius);
+      bloomFactors[i] = this.bloomStrength * MathUtils.lerp(factor, 1.2 - factor, this.bloomRadius);
     }
 
     return bloomFactors;
   }
 
-  /**
-   * Public methods
-   */
+  // Public methods
 
   static resize = (width, height, dpr) => {
     this.renderer.setPixelRatio(dpr);
@@ -142,7 +138,7 @@ export class RenderManager {
 
     this.renderTargetA.setSize(width, height);
 
-    if (Tests.highQuality) {
+    if (isHighQuality) {
       this.renderTargetB.setSize(width, height);
 
       width = MathUtils.floorPowerOfTwo(width) / 2;
@@ -156,8 +152,8 @@ export class RenderManager {
 
         this.blurMaterials[i].uniforms.uResolution.value.set(width, height);
 
-        width = width / 2;
-        height = height / 2;
+        width /= 2;
+        height /= 2;
       }
     }
   };
@@ -167,9 +163,6 @@ export class RenderManager {
     const scene = this.scene;
     const camera = this.camera;
 
-    const screenScene = this.screenScene;
-    const screenCamera = this.screenCamera;
-
     const renderTargetA = this.renderTargetA;
 
     // Scene pass
@@ -177,7 +170,7 @@ export class RenderManager {
     renderer.clear();
     renderer.render(scene, camera);
 
-    if (Tests.highQuality) {
+    if (isHighQuality) {
       const renderTargetB = this.renderTargetB;
       const renderTargetBright = this.renderTargetBright;
       const renderTargetsHorizontal = this.renderTargetsHorizontal;
@@ -188,7 +181,7 @@ export class RenderManager {
       this.screen.material = this.luminosityMaterial;
       renderer.setRenderTarget(renderTargetBright);
       renderer.clear();
-      renderer.render(screenScene, screenCamera);
+      renderer.render(this.screen, this.screenCamera);
 
       // Blur all the mips progressively
       let inputRenderTarget = renderTargetBright;
@@ -200,13 +193,13 @@ export class RenderManager {
         this.blurMaterials[i].uniforms.uDirection.value = BlurDirectionX;
         renderer.setRenderTarget(renderTargetsHorizontal[i]);
         renderer.clear();
-        renderer.render(screenScene, screenCamera);
+        renderer.render(this.screen, this.screenCamera);
 
         this.blurMaterials[i].uniforms.tMap.value = this.renderTargetsHorizontal[i].texture;
         this.blurMaterials[i].uniforms.uDirection.value = BlurDirectionY;
         renderer.setRenderTarget(renderTargetsVertical[i]);
         renderer.clear();
-        renderer.render(screenScene, screenCamera);
+        renderer.render(this.screen, this.screenCamera);
 
         inputRenderTarget = renderTargetsVertical[i];
       }
@@ -215,14 +208,14 @@ export class RenderManager {
       this.screen.material = this.bloomCompositeMaterial;
       renderer.setRenderTarget(renderTargetsHorizontal[0]);
       renderer.clear();
-      renderer.render(screenScene, screenCamera);
+      renderer.render(this.screen, this.screenCamera);
 
       // Composite pass
       this.compositeMaterial.uniforms.tScene.value = renderTargetA.texture;
       this.screen.material = this.compositeMaterial;
       renderer.setRenderTarget(renderTargetB);
       renderer.clear();
-      renderer.render(screenScene, screenCamera);
+      renderer.render(this.screen, this.screenCamera);
 
       // HUD scene
       renderer.render(this.displayScene, this.displayCamera);
@@ -232,12 +225,12 @@ export class RenderManager {
       this.screen.material = this.fxaaMaterial;
       renderer.setRenderTarget(null);
       renderer.clear();
-      renderer.render(screenScene, screenCamera);
+      renderer.render(this.screen, this.screenCamera);
 
       // Dirt pass (render to screen)
       this.dirtMaterial.uniforms.tBloom.value = renderTargetsHorizontal[0].texture;
       this.screen.material = this.dirtMaterial;
-      renderer.render(screenScene, screenCamera);
+      renderer.render(this.screen, this.screenCamera);
     } else {
       // HUD scene
       renderer.render(this.displayScene, this.displayCamera);
@@ -247,7 +240,7 @@ export class RenderManager {
       this.screen.material = this.fxaaMaterial;
       renderer.setRenderTarget(null);
       renderer.clear();
-      renderer.render(screenScene, screenCamera);
+      renderer.render(this.screen, this.screenCamera);
     }
 
     // HUD text scene (render to screen)
@@ -255,7 +248,7 @@ export class RenderManager {
   };
 
   static start = () => {
-    if (!Tests.highQuality) {
+    if (!isHighQuality) {
       return;
     }
 
@@ -266,7 +259,7 @@ export class RenderManager {
   };
 
   static animateIn = () => {
-    if (!Tests.highQuality) {
+    if (!isHighQuality) {
       return;
     }
 

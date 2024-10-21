@@ -9,9 +9,7 @@ export class SocketThread {
     addEventListener('message', this.onMessage);
   }
 
-  /**
-   * Event handlers
-   */
+  // Event handlers
 
   onMessage = ({ data }) => {
     this[data.message.fn].call(this, data.message);
@@ -41,9 +39,7 @@ export class SocketThread {
     postMessage({ event: 'contact', message: e });
   };
 
-  /**
-   * Public methods
-   */
+  // Public methods
 
   init = ({ server }) => {
     this.socket = new Socket(server);

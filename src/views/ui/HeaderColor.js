@@ -1,16 +1,8 @@
 import { Vector2 } from 'three';
+import { Color, Input, Interface, Panel, PanelItem, Stage, clearTween, delayedCall } from '@alienkitty/space.js/three';
 
-import { Config } from '../../config/Config.js';
-import { Styles } from '../../config/Styles.js';
-import { Events } from '../../config/Events.js';
-import { Global } from '../../config/Global.js';
-import { Interface } from '../../utils/Interface.js';
-import { Stage } from '../../controllers/Stage.js';
-import { Panel } from '../panel/Panel.js';
-import { PanelItem } from '../panel/PanelItem.js';
-import { ColorInput } from './ColorInput.js';
-
-import { formatColor } from '../../utils/MultiuserBlocksUtils.js';
+import { lightColor, store } from '../../config/Config.js';
+import { formatColor } from '../../utils/Utils.js';
 
 export class HeaderColor extends Interface {
   constructor(display) {
@@ -24,95 +16,87 @@ export class HeaderColor extends Interface {
     this.lastMouse = new Vector2();
     this.openColor = null;
 
-    this.initHTML();
-    this.initLatency();
-    this.initPanel();
-    this.initColor();
+    this.init();
 
     this.addListeners();
   }
 
-  initHTML() {
+  init() {
     this.css({
       position: 'relative',
       cssFloat: 'left',
       width: 128,
       height: 35
     });
-  }
 
-  initLatency() {
-    this.latency = new Interface('.latency');
+    this.latency = new Interface('.secondary');
     this.latency.css({
-      left: 33,
+      position: 'absolute',
+      left: 34,
       top: 10,
-      ...Styles.monospaceSmall,
+      fontSize: 'var(--ui-secondary-font-size)',
+      letterSpacing: 'var(--ui-secondary-letter-spacing)',
       webkitUserSelect: 'none',
       userSelect: 'none',
-      opacity: 0.7
+      opacity: 'var(--ui-secondary-opacity)'
     });
     this.add(this.latency);
-  }
 
-  initPanel() {
     this.panel = new Panel();
     this.panel.css({
-      left: 0,
+      position: 'absolute',
+      left: 10,
       top: 8,
-      width: 128
+      width: 108
     });
     this.add(this.panel);
 
-    const items = [
-      {
-        type: 'color',
-        value: Config.LIGHT_COLOR,
-        noText: true,
-        callback: this.onPicking
-      }
-    ];
-
-    items.forEach(data => {
-      const item = new PanelItem(data);
-      this.panel.add(item);
+    const item = new PanelItem({
+      type: 'color',
+      value: lightColor,
+      noText: true,
+      callback: this.onPicking
     });
+    this.panel.add(item);
 
-    this.colorPicker = this.panel.items[0].color;
+    this.colorPicker = item.view;
+    this.colorPicker.fastClose = false;
     this.colorPicker.swatch.invisible();
-  }
 
-  initColor() {
-    this.color = new ColorInput();
+    this.color = new Input({
+      placeholder: new Color(lightColor).getHexString(),
+      maxlength: 6,
+      noTotal: true,
+      noLine: true
+    });
     this.color.css({
       position: 'absolute',
-      top: 0,
-      right: 10
+      top: 8,
+      right: 10,
+      width: 47,
+      height: 19
     });
-    this.panel.add(this.color);
+    this.add(this.color);
   }
 
   addListeners() {
-    Stage.events.on(Events.COLOR_PICKER, this.onColorPicker);
-    this.color.input.events.on(Events.TYPING, this.onTyping);
-    this.color.events.on(Events.COMPLETE, this.onComplete);
+    Stage.events.on('color_picker', this.onColorPicker);
+    this.color.events.on('update', this.onUpdate);
+    this.color.events.on('complete', this.onComplete);
     window.addEventListener('pointerdown', this.onPointerDown);
-    window.addEventListener('pointerup', this.onPointerUp);
   }
 
   removeListeners() {
-    Stage.events.off(Events.COLOR_PICKER, this.onColorPicker);
-    this.color.input.events.off(Events.TYPING, this.onTyping);
-    this.color.events.off(Events.COMPLETE, this.onComplete);
+    Stage.events.off('color_picker', this.onColorPicker);
+    this.color.events.off('update', this.onUpdate);
+    this.color.events.off('complete', this.onComplete);
     window.removeEventListener('pointerdown', this.onPointerDown);
-    window.removeEventListener('pointerup', this.onPointerUp);
   }
 
-  /**
-   * Event handlers
-   */
+  // Event handlers
 
   onColorPicker = ({ open, target }) => {
-    if (!this.element.contains(target.element)) {
+    if (!this.openColor && !this.element.contains(target.element)) {
       return;
     }
 
@@ -123,38 +107,43 @@ export class HeaderColor extends Interface {
     }
   };
 
-  onTyping = ({ text }) => {
-    this.clearTimeout(this.timeout);
+  onUpdate = ({ value }) => {
+    clearTween(this.timeout);
 
-    const style = formatColor(text);
+    const style = formatColor(value);
 
-    this.timeout = this.delayedCall(200, () => {
-      this.colorPicker.setValue(style || Config.LIGHT_COLOR);
+    this.timeout = delayedCall(200, () => {
+      this.colorPicker.setValue(style || lightColor, false);
       this.display.ball.setColor(this.colorPicker.value);
 
-      Global.COLOR = this.colorPicker.value.getHexString();
+      store.color = this.colorPicker.value.getHexString();
 
-      Stage.events.emit(Events.COLOR, { text: Global.COLOR });
+      Stage.events.emit('color', { value: store.color });
     });
   };
 
   onPicking = value => {
+    if (value.getHex() === lightColor) {
+      return;
+    }
+
     this.display.ball.setColor(value);
 
-    Global.COLOR = value.getHexString();
+    store.color = value.getHexString();
 
-    this.color.input.setValue(Global.COLOR);
+    this.color.setValue(store.color);
 
-    this.clearTimeout(this.timeout);
-    this.timeout = this.delayedCall(200, () => {
-      Stage.events.emit(Events.COLOR, { text: Global.COLOR });
+    clearTween(this.timeout);
+
+    this.timeout = delayedCall(200, () => {
+      Stage.events.emit('color', { value: store.color });
     });
   };
 
   onComplete = () => {
     this.color.blur();
 
-    Stage.events.emit(Events.COLOR_PICKER, { open: false, target: this });
+    Stage.events.emit('color_picker', { open: false, target: this });
   };
 
   onPointerDown = e => {
@@ -162,9 +151,13 @@ export class HeaderColor extends Interface {
       return;
     }
 
+    this.lastTime = performance.now();
+    this.lastMouse.set(e.clientX, e.clientY);
+
     this.onPointerMove(e);
 
     window.addEventListener('pointermove', this.onPointerMove);
+    window.addEventListener('pointerup', this.onPointerUp);
   };
 
   onPointerMove = ({ clientX, clientY }) => {
@@ -174,50 +167,23 @@ export class HeaderColor extends Interface {
     };
 
     this.mouse.copy(event);
-
-    if (!this.lastTime) {
-      this.lastTime = performance.now();
-      this.lastMouse.copy(event);
-    }
+    this.delta.subVectors(this.mouse, this.lastMouse);
   };
 
   onPointerUp = e => {
-    if (!this.openColor || !this.lastTime) {
-      return;
-    }
-
     window.removeEventListener('pointermove', this.onPointerMove);
+    window.removeEventListener('pointerup', this.onPointerUp);
 
-    this.onPointerMove(e);
-
-    if (performance.now() - this.lastTime > 750 || this.delta.subVectors(this.mouse, this.lastMouse).length() > 50) {
-      this.lastTime = null;
+    if (performance.now() - this.lastTime > 250 || this.delta.length() > 50) {
       return;
     }
 
-    if (!this.element.contains(e.target)) {
-      Stage.events.emit(Events.COLOR_PICKER, { open: false, target: this });
+    if (this.openColor && !this.openColor.element.contains(e.target)) {
+      Stage.events.emit('color_picker', { open: false, target: this });
     }
-
-    this.lastTime = null;
   };
 
-  /**
-   * Public methods
-   */
-
-  animateIn = () => {
-    if (Global.COLOR) {
-      const style = `#${Global.COLOR}`;
-
-      this.colorPicker.setValue(style);
-      this.display.ball.setColor(this.colorPicker.value);
-      this.color.input.setValue(Global.COLOR);
-    }
-
-    this.panel.animateIn();
-    this.color.animateIn();
-  };
+  // Public methods
 
   setData = data => {
     if (!data) {
@@ -227,6 +193,19 @@ export class HeaderColor extends Interface {
     if (data.latency) {
       this.latency.text(`${data.latency}ms`);
     }
+  };
+
+  animateIn = () => {
+    if (store.color) {
+      const style = `#${store.color}`;
+
+      this.colorPicker.setValue(style, false);
+      this.display.ball.setColor(this.colorPicker.value);
+      this.color.setValue(store.color);
+    }
+
+    this.panel.animateIn();
+    this.color.animateIn();
   };
 
   destroy = () => {

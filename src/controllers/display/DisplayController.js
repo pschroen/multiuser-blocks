@@ -4,9 +4,7 @@ export class DisplayController {
     this.view = view;
   }
 
-  /**
-   * Public methods
-   */
+  // Public methods
 
   static resize = (width, height, dpr) => {
     this.camera.left = -width / 2;
@@ -30,6 +28,10 @@ export class DisplayController {
 
   static animateIn = () => {
     this.view.animateIn();
+  };
+
+  static toggle = show => {
+    this.view.toggle(show);
   };
 
   static ready = () => this.view.ready();

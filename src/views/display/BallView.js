@@ -1,11 +1,11 @@
 import { AmbientLight, DirectionalLight, Group, Mesh, OrthographicCamera, Scene, WebGLRenderTarget } from 'three';
+import { clearTween, tween } from '@alienkitty/space.js/three';
+import { BasicMaterial } from '@alienkitty/alien.js/three';
 
-import { Config } from '../../config/Config.js';
 import { WorldController } from '../../controllers/world/WorldController.js';
-import { BasicMaterial } from '../../materials/BasicMaterial.js';
 import { Ball } from './Ball.js';
 
-import { tween } from '../../tween/Tween.js';
+import { breakpoint } from '../../config/Config.js';
 
 export class BallView extends Group {
   constructor() {
@@ -55,7 +55,7 @@ export class BallView extends Group {
   initMesh() {
     const { displayQuad } = WorldController;
 
-    this.material = new BasicMaterial(this.renderTarget.texture);
+    this.material = new BasicMaterial({ map: this.renderTarget.texture });
 
     this.mesh = new Mesh(displayQuad, this.material);
     this.mesh.frustumCulled = false;
@@ -69,16 +69,19 @@ export class BallView extends Group {
     this.scene.add(this.ball);
   }
 
-  /**
-   * Public methods
-   */
+  // Public methods
+
+  setColor = color => {
+    this.ball.setColor(color);
+    this.update();
+  };
 
   resize = (width, height, dpr) => {
-    if (width < Config.BREAKPOINT) {
-      this.x = 19;
+    if (width < breakpoint) {
+      this.x = 20;
       this.y = 18;
     } else {
-      this.x = 29;
+      this.x = 30;
       this.y = 28;
     }
 
@@ -106,15 +109,32 @@ export class BallView extends Group {
   };
 
   animateIn = () => {
+    const duration = 1000;
+    const ease = 'easeOutQuart';
+    const delay = 200;
+
+    clearTween(this.position);
+    clearTween(this.material.uniforms.uAlpha);
+
     this.position.x = this.x - 10;
     this.material.uniforms.uAlpha.value = 0;
 
-    tween(this.position, { x: this.x }, 1000, 'easeOutQuart');
-    tween(this.material.uniforms.uAlpha, { value: 1 }, 1000, 'easeOutQuart');
+    tween(this.position, { x: this.x }, duration, ease, delay);
+    tween(this.material.uniforms.uAlpha, { value: 1 }, duration, ease, delay);
   };
 
-  setColor = color => {
-    this.ball.setColor(color);
-    this.update();
+  animateOut() {
+    clearTween(this.position);
+    clearTween(this.material.uniforms.uAlpha);
+
+    tween(this.material.uniforms.uAlpha, { value: 0 }, 400, 'easeOutCubic');
+  }
+
+  toggle = show => {
+    if (show) {
+      this.animateIn();
+    } else {
+      this.animateOut();
+    }
   };
 }

@@ -1,10 +1,11 @@
-import { Group, Mesh, NoBlending, PlaneGeometry, RepeatWrapping, ShadowMaterial, Uniform, Vector3 } from 'three';
+import { Group, Mesh, NoBlending, PlaneGeometry, RepeatWrapping, ShadowMaterial, Vector3 } from 'three';
+import { Reflector } from '@alienkitty/alien.js/three';
 
-import { Tests } from '../../config/Tests.js';
-import { Reflector } from '../../utils/world/Reflector.js';
 import { WorldController } from '../../controllers/world/WorldController.js';
 
-import dither from '../../shaders/modules/dither/dither.glsl.js';
+import { isHighQuality } from '../../config/Config.js';
+
+import dither from '@alienkitty/alien.js/src/shaders/modules/dither/dither.glsl.js';
 
 export class Floor extends Group {
   constructor(ball) {
@@ -14,6 +15,7 @@ export class Floor extends Group {
 
     this.position.y = -2.5;
 
+    // Physics
     this.size = new Vector3(100, 5, 100);
 
     this.initReflector();
@@ -24,7 +26,7 @@ export class Floor extends Group {
 
     this.light = light;
 
-    this.reflector = new Reflector({ blurIterations: Tests.highQuality ? 6 : 0 });
+    this.reflector = new Reflector({ blurIterations: isHighQuality ? 6 : 0 });
   }
 
   async initMesh() {
@@ -38,12 +40,12 @@ export class Floor extends Group {
     map.repeat.set(6, 3);
 
     const material = new ShadowMaterial({
+      transparent: false,
       blending: NoBlending,
-      toneMapped: false,
-      transparent: false
+      toneMapped: false
     });
 
-    if (Tests.highQuality) {
+    if (isHighQuality) {
       material.defines = material.defines || {};
       material.defines.USE_BLUR = '';
     }
@@ -51,15 +53,15 @@ export class Floor extends Group {
     material.onBeforeCompile = shader => {
       map.updateMatrix();
 
-      shader.uniforms.map = new Uniform(map);
-      shader.uniforms.reflectMap = new Uniform(this.reflector.renderTarget.texture);
+      shader.uniforms.map = { value: map };
+      shader.uniforms.reflectMap = { value: this.reflector.renderTarget.texture };
       shader.uniforms.reflectMapBlur = this.reflector.renderTargetUniform;
-      shader.uniforms.uvTransform = new Uniform(map.matrix);
+      shader.uniforms.uvTransform = { value: map.matrix };
       shader.uniforms.textureMatrix = this.reflector.textureMatrixUniform;
 
       shader.vertexShader = shader.vertexShader.replace(
         'void main() {',
-        /* glsl */`
+        /* glsl */ `
         uniform mat3 uvTransform;
         uniform mat4 textureMatrix;
         out vec2 vUv;
@@ -71,7 +73,7 @@ export class Floor extends Group {
 
       shader.vertexShader = shader.vertexShader.replace(
         '#include <project_vertex>',
-        /* glsl */`
+        /* glsl */ `
         #include <project_vertex>
 
         vUv = (uvTransform * vec3(uv, 1)).xy;
@@ -81,7 +83,7 @@ export class Floor extends Group {
 
       shader.fragmentShader = shader.fragmentShader.replace(
         'void main() {',
-        /* glsl */`
+        /* glsl */ `
         uniform sampler2D map;
         uniform sampler2D reflectMap;
 
@@ -100,7 +102,7 @@ export class Floor extends Group {
 
       shader.fragmentShader = shader.fragmentShader.replace(
         'gl_FragColor = vec4( color, opacity * ( 1.0 - getShadowMask() ) );',
-        /* glsl */`
+        /* glsl */ `
         vec2 reflectionUv = vCoord.xy / vCoord.w;
 
         vec4 dudv = texture(map, vUv);
@@ -125,6 +127,7 @@ export class Floor extends Group {
         gl_FragColor.rgb -= (1.0 - getShadowMask()) * 0.025;
 
         gl_FragColor.rgb = dither(gl_FragColor.rgb);
+        gl_FragColor.a = 1.0;
         `
       );
     };
@@ -154,12 +157,10 @@ export class Floor extends Group {
     this.mesh = mesh;
   }
 
-  /**
-   * Public methods
-   */
+  // Public methods
 
   resize = (width, height, dpr) => {
-    if (Tests.highQuality) {
+    if (isHighQuality) {
       height = 1024;
 
       this.reflector.blurIterations = dpr > 1 ? 6 : 4;

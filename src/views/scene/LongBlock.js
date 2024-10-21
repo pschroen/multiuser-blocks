@@ -1,7 +1,6 @@
-import { BoxGeometry, Color, Group, Mesh, MeshPhongMaterial, ShaderChunk, Uniform, Vector3 } from 'three';
+import { BoxGeometry, Color, Group, Mesh, MeshPhongMaterial, ShaderChunk, Vector3 } from 'three';
 
-import { Config } from '../../config/Config.js';
-import { Layer } from '../../config/Layer.js';
+import { layers, lightColor } from '../../config/Config.js';
 
 export class LongBlock extends Group {
   constructor() {
@@ -16,33 +15,34 @@ export class LongBlock extends Group {
     const geometry = new BoxGeometry(this.size.x, this.size.y, this.size.z);
 
     const material = new MeshPhongMaterial({
-      color: new Color(Config.LIGHT_COLOR).offsetHSL(0, 0, -0.035),
-      emissive: new Color(Config.LIGHT_COLOR).offsetHSL(0, 0, -0.65),
-      emissiveIntensity: 0.4
+      color: new Color(lightColor).offsetHSL(0, 0, -0.035),
+      emissive: new Color(lightColor).offsetHSL(0, 0, -0.65),
+      emissiveIntensity: 0.4,
+      flatShading: true
     });
 
-    // Based on {@link module:three/examples/jsm/shaders/SubsurfaceScatteringShader.js} by daoshengmu
+    // Based on https://github.com/mrdoob/three.js/blob/dev/examples/jsm/shaders/SubsurfaceScatteringShader.js by daoshengmu
 
     material.onBeforeCompile = shader => {
-      shader.uniforms.thicknessDistortion = new Uniform(0);
-      shader.uniforms.thicknessAmbient = new Uniform(0);
-      shader.uniforms.thicknessAttenuation = new Uniform(1);
-      shader.uniforms.thicknessPower = new Uniform(32);
-      shader.uniforms.thicknessScale = new Uniform(64);
+      shader.uniforms.thicknessDistortion = { value: 0 };
+      shader.uniforms.thicknessAmbient = { value: 0 };
+      shader.uniforms.thicknessAttenuation = { value: 1 };
+      shader.uniforms.thicknessPower = { value: 32 };
+      shader.uniforms.thicknessScale = { value: 64 };
 
       shader.fragmentShader = shader.fragmentShader.replace(
         'void main() {',
-        /* glsl */`
+        /* glsl */ `
         uniform float thicknessDistortion;
         uniform float thicknessAmbient;
         uniform float thicknessAttenuation;
         uniform float thicknessPower;
         uniform float thicknessScale;
 
-        void RE_Direct_Scattering(IncidentLight directLight, GeometricContext geometry, inout ReflectedLight reflectedLight) {
+        void RE_Direct_Scattering(IncidentLight directLight, vec3 geometryPosition, vec3 geometryNormal, vec3 geometryViewDir, vec3 geometryClearcoatNormal, inout ReflectedLight reflectedLight) {
           vec3 thickness = vec3(0.05);
-          vec3 scatteringHalf = normalize(directLight.direction + (geometry.normal * thicknessDistortion));
-          float scatteringDot = pow(saturate(dot(geometry.viewDir, -scatteringHalf)), thicknessPower) * thicknessScale;
+          vec3 scatteringHalf = normalize(directLight.direction + (geometryNormal * thicknessDistortion));
+          float scatteringDot = pow(saturate(dot(geometryViewDir, -scatteringHalf)), thicknessPower) * thicknessScale;
           vec3 scatteringIllu = (scatteringDot + thicknessAmbient) * thickness;
           reflectedLight.directDiffuse += scatteringIllu * thicknessAttenuation * directLight.color;
         }
@@ -54,10 +54,10 @@ export class LongBlock extends Group {
       shader.fragmentShader = shader.fragmentShader.replace(
         '#include <lights_fragment_begin>',
         ShaderChunk.lights_fragment_begin.replaceAll(
-          'RE_Direct( directLight, geometry, material, reflectedLight );',
-          /* glsl */`
-          RE_Direct( directLight, geometry, material, reflectedLight );
-          RE_Direct_Scattering(directLight, geometry, reflectedLight);
+          'RE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );',
+          /* glsl */ `
+          RE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );
+          RE_Direct_Scattering(directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, reflectedLight);
           `
         )
       );
@@ -66,15 +66,13 @@ export class LongBlock extends Group {
     const mesh = new Mesh(geometry, material);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
-    mesh.layers.enable(Layer.PICKING);
+    mesh.layers.enable(layers.picking);
     this.add(mesh);
 
     this.mesh = mesh;
   }
 
-  /**
-   * Public methods
-   */
+  // Public methods
 
   ready = () => this.initMesh();
 }

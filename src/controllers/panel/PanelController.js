@@ -1,14 +1,11 @@
 import { ACESFilmicToneMapping, CineonToneMapping, LinearToneMapping, NoToneMapping, ReinhardToneMapping } from 'three';
+import { PanelItem, Stage, brightness } from '@alienkitty/space.js/three';
 
-import { Events } from '../../config/Events.js';
 import { RenderManager } from '../world/RenderManager.js';
-import { Stage } from '../Stage.js';
-import { PanelItem } from '../../views/panel/PanelItem.js';
-
-import { brightness } from '../../utils/Utils.js';
 
 export class PanelController {
   static init(ui, renderer, scene, view, display) {
+    this.ui = ui;
     this.panel = ui.header.info.panel;
     this.details = ui.details;
     this.renderer = renderer;
@@ -46,7 +43,7 @@ export class PanelController {
 
     const items = [
       {
-        label: 'FPS'
+        name: 'FPS'
       },
       {
         type: 'divider'
@@ -57,7 +54,7 @@ export class PanelController {
         callback: value => {
           this.scene.background.copy(value);
 
-          this.details.bg.css({ backgroundColor: `#${value.getHexString()}` });
+          Stage.root.style.setProperty('--bg-color', `#${value.getHexString()}`);
 
           this.setInvert(value);
         }
@@ -83,7 +80,7 @@ export class PanelController {
       },
       {
         type: 'slider',
-        label: 'Exp',
+        name: 'Exp',
         min: 0,
         max: 2,
         step: 0.01,
@@ -100,7 +97,7 @@ export class PanelController {
       },
       {
         type: 'slider',
-        label: 'Chroma',
+        name: 'Chroma',
         min: 0,
         max: 1,
         step: 0.01,
@@ -112,7 +109,7 @@ export class PanelController {
       },
       {
         type: 'slider',
-        label: 'Boost',
+        name: 'Boost',
         min: 0,
         max: 2,
         step: 0.01,
@@ -124,7 +121,7 @@ export class PanelController {
       },
       {
         type: 'slider',
-        label: 'Reduce',
+        name: 'Reduce',
         min: 0,
         max: 2,
         step: 0.01,
@@ -136,7 +133,7 @@ export class PanelController {
       },
       {
         type: 'slider',
-        label: 'Grain',
+        name: 'Grain',
         min: 0,
         max: 1,
         step: 0.01,
@@ -151,7 +148,7 @@ export class PanelController {
         list: matrixFilterOptions,
         value: 'Off',
         callback: value => {
-          compositeMaterial.uniforms.uMatrixFilter.value = matrixFilterOptions[value] ? 1 : 0;
+          compositeMaterial.uniforms.uMatrixFilter.value = matrixFilterOptions[value];
         }
       },
       {
@@ -159,7 +156,7 @@ export class PanelController {
       },
       {
         type: 'slider',
-        label: 'Thresh',
+        name: 'Thresh',
         min: 0,
         max: 1,
         step: 0.01,
@@ -171,7 +168,7 @@ export class PanelController {
       },
       {
         type: 'slider',
-        label: 'Smooth',
+        name: 'Smooth',
         min: 0,
         max: 1,
         step: 0.01,
@@ -183,7 +180,7 @@ export class PanelController {
       },
       {
         type: 'slider',
-        label: 'Strength',
+        name: 'Strength',
         min: 0,
         max: 1,
         step: 0.01,
@@ -196,7 +193,7 @@ export class PanelController {
       },
       {
         type: 'slider',
-        label: 'Radius',
+        name: 'Radius',
         min: 0,
         max: 1,
         step: 0.01,
@@ -209,7 +206,7 @@ export class PanelController {
       },
       {
         type: 'slider',
-        label: 'Chroma',
+        name: 'Chroma',
         min: 0,
         max: 1,
         step: 0.01,
@@ -233,22 +230,20 @@ export class PanelController {
     ];
 
     items.forEach(data => {
-      const item = new PanelItem(data);
-      this.panel.add(item);
+      this.ui.addPanel(new PanelItem(data));
     });
   }
 
-  /**
-   * Public methods
-   */
+  // Public methods
 
   static setInvert = value => {
-    const invert = brightness(value) > 0.6; // Light colour is inverted
+    // Light colour is inverted
+    const invert = brightness(value) > 0.6;
 
     if (invert !== this.lastInvert) {
       this.lastInvert = invert;
 
-      Stage.events.emit(Events.INVERT, { invert });
+      this.ui.invert(invert);
     }
   };
 }

@@ -16,9 +16,7 @@ export class DisplayView extends Group {
     this.add(this.ball);
   }
 
-  /**
-   * Public methods
-   */
+  // Public methods
 
   resize = (width, height, dpr) => {
     this.ball.resize(width, height, dpr);
@@ -31,6 +29,10 @@ export class DisplayView extends Group {
     this.ball.animateIn();
 
     this.visible = true;
+  };
+
+  toggle = show => {
+    this.ball.toggle(show);
   };
 
   ready = () => Promise.all([

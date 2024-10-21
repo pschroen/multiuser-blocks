@@ -42,24 +42,22 @@ export class SceneView extends Group {
   }
 
   addListeners() {
-    InputManager.add(this.fwa.children);
-    // InputManager.add(this.long.children);
-    InputManager.add(this.awwwards.children);
-    InputManager.add(this.awwwardsBall.children);
-    InputManager.add(this.block.children);
+    InputManager.add(...this.fwa.children);
+    // InputManager.add(...this.long.children);
+    InputManager.add(...this.awwwards.children);
+    InputManager.add(...this.awwwardsBall.children);
+    InputManager.add(...this.block.children);
   }
 
   removeListeners() {
-    InputManager.remove(this.fwa.children);
-    // InputManager.remove(this.long.children);
-    InputManager.remove(this.awwwards.children);
-    InputManager.remove(this.awwwardsBall.children);
-    InputManager.remove(this.block.children);
+    InputManager.remove(...this.fwa.children);
+    // InputManager.remove(...this.long.children);
+    InputManager.remove(...this.awwwards.children);
+    InputManager.remove(...this.awwwardsBall.children);
+    InputManager.remove(...this.block.children);
   }
 
-  /**
-   * Public methods
-   */
+  // Public methods
 
   resize = (width, height, dpr) => {
     this.floor.resize(width, height, dpr);

@@ -1,12 +1,10 @@
 import { Color, Mesh, MeshBasicMaterial, Raycaster, Vector2, Vector3 } from 'three';
+import { Stage, tween } from '@alienkitty/space.js/three';
 
-import { Device } from '../../config/Device.js';
-import { Layer } from '../../config/Layer.js';
 import { WorldController } from './WorldController.js';
 import { SceneController } from '../scene/SceneController.js';
-import { Stage } from '../Stage.js';
 
-import { tween } from '../../tween/Tween.js';
+import { isMobile, layers } from '../../config/Config.js';
 
 export class InputManager {
   static init(scene, camera, view) {
@@ -14,14 +12,14 @@ export class InputManager {
     this.camera = camera;
     this.view = view;
 
-    this.objects = [];
     this.raycaster = new Raycaster();
-    this.raycaster.layers.set(Layer.PICKING);
+    this.raycaster.layers.enable(layers.picking);
 
+    this.objects = [];
     this.mouse = new Vector2();
     this.target = new Vector3();
     this.lerpSpeed = 0.03;
-    this.mobileOffset = Device.phone ? 1 : 0; // Position above finger
+    this.mobileOffset = isMobile ? 1 : 0; // Position above finger
     this.hover = null;
     this.selected = null;
     this.isDown = false;
@@ -40,14 +38,14 @@ export class InputManager {
     const { quad } = WorldController;
 
     this.material = new MeshBasicMaterial({
-      color: new Color(Stage.rootStyle.getPropertyValue('--main-bg-color').trim()),
-      toneMapped: false,
-      transparent: true
+      color: new Color(Stage.rootStyle.getPropertyValue('--bg-color').trim()),
+      transparent: true,
+      toneMapped: false
     });
 
     this.plane = new Mesh(quad, new MeshBasicMaterial({ visible: false }));
     this.plane.scale.multiplyScalar(200);
-    this.plane.layers.enable(Layer.PICKING);
+    this.plane.layers.enable(layers.picking);
     this.scene.add(this.plane);
 
     // Start position
@@ -55,19 +53,17 @@ export class InputManager {
     this.dragPlane.position.copy(this.position);
     this.dragPlane.quaternion.copy(this.camera.quaternion);
     this.dragPlane.scale.multiplyScalar(200);
-    this.dragPlane.layers.enable(Layer.PICKING);
+    this.dragPlane.layers.enable(layers.picking);
     this.scene.add(this.dragPlane);
   }
 
   static addListeners() {
-    Stage.element.addEventListener('pointerdown', this.onPointerDown);
+    window.addEventListener('pointerdown', this.onPointerDown);
     window.addEventListener('pointermove', this.onPointerMove);
     window.addEventListener('pointerup', this.onPointerUp);
   }
 
-  /**
-   * Event handlers
-   */
+  // Event handlers
 
   static onPointerDown = e => {
     if (!this.enabled) {
@@ -84,8 +80,8 @@ export class InputManager {
       return;
     }
 
-    this.mouse.x = (clientX / Stage.width) * 2 - 1;
-    this.mouse.y = 1 - (clientY / Stage.height) * 2;
+    this.mouse.x = (clientX / document.documentElement.clientWidth) * 2 - 1;
+    this.mouse.y = 1 - (clientY / document.documentElement.clientHeight) * 2;
 
     if (this.prevent) {
       return;
@@ -209,9 +205,7 @@ export class InputManager {
     this.onPointerMove(e);
   };
 
-  /**
-   * Public methods
-   */
+  // Public methods
 
   static update = () => {
     if (this.material.visible) {
@@ -237,7 +231,7 @@ export class InputManager {
   };
 
   static animateIn = () => {
-    tween(this.material, { opacity: 0 }, 4200, 'easeInOutQuart', () => {
+    tween(this.material, { opacity: 0 }, 2800, 'easeInOutQuart', () => {
       this.material.visible = false;
       this.scene.remove(this.dragPlane);
       this.dragPlane.position.copy(this.plane.position);
@@ -246,26 +240,27 @@ export class InputManager {
     });
   };
 
-  static add = objects => {
-    if (!Array.isArray(objects)) {
-      objects = [objects];
-    }
-
+  static add = (...objects) => {
     this.objects.push(...objects);
   };
 
-  static remove = objects => {
-    if (!Array.isArray(objects)) {
-      objects = [objects];
-    }
+  static remove = (...objects) => {
+    objects.forEach(object => {
+      const index = this.objects.indexOf(object);
 
-    this.objects.forEach((object, index) => {
+      if (~index) {
+        this.objects.splice(index, 1);
+      }
+
+      if (object.parent.isGroup) {
+        object = object.parent;
+      }
+
       if (object === this.hover) {
+        this.hover.onHover({ type: 'out' });
         this.hover = null;
         Stage.css({ cursor: '' });
       }
-
-      this.objects.splice(index, 1);
     });
   };
 }

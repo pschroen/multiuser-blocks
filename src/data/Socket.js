@@ -1,4 +1,4 @@
-import { EventEmitter } from '../utils/EventEmitter.js';
+import { EventEmitter } from '@alienkitty/space.js/three';
 
 export class Socket extends EventEmitter {
   constructor(server) {
@@ -53,9 +53,7 @@ export class Socket extends EventEmitter {
     return (ipl >>> 24) + '.' + (ipl >> 16 & 255) + '.' + (ipl >> 8 & 255) + '.' + (ipl & 255);
   }
 
-  /**
-   * Event handlers
-   */
+  // Event handlers
 
   onOpen = () => {
     this.connected = true;
@@ -118,9 +116,7 @@ export class Socket extends EventEmitter {
     }
   };
 
-  /**
-   * Public methods
-   */
+  // Public methods
 
   color = text => {
     const view = this.views[4];

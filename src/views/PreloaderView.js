@@ -1,16 +1,7 @@
-import { Config } from '../config/Config.js';
-import { Device } from '../config/Device.js';
-import { Styles } from '../config/Styles.js';
-import { Events } from '../config/Events.js';
-import { Global } from '../config/Global.js';
-import { Interface } from '../utils/Interface.js';
-import { Stage } from '../controllers/Stage.js';
-import { Panel } from './panel/Panel.js';
-import { PanelItem } from './panel/PanelItem.js';
-import { ColorInput } from './ui/ColorInput.js';
+import { Color, Input, Interface, Panel, PanelItem, Stage, clearTween, delayedCall, tween } from '@alienkitty/space.js/three';
 
-import { clearTween, tween } from '../tween/Tween.js';
-import { formatColor } from '../utils/MultiuserBlocksUtils.js';
+import { breakpoint, isMobile, lightColor, store } from '../config/Config.js';
+import { formatColor } from '../utils/Utils.js';
 
 export class PreloaderView extends Interface {
   constructor() {
@@ -18,20 +9,15 @@ export class PreloaderView extends Interface {
 
     this.progress = 0;
 
-    this.initHTML();
-    this.initBackground();
-    this.initContainer();
-    this.initPanel();
-    this.initColor();
-    this.initNumber();
-    this.initTitle();
+    this.init();
 
     this.addListeners();
     this.onResize();
   }
 
-  initHTML() {
+  init() {
     this.css({
+      position: 'absolute',
       left: 0,
       top: 0,
       width: '100%',
@@ -39,68 +25,59 @@ export class PreloaderView extends Interface {
       zIndex: 100,
       pointerEvents: 'none'
     });
-  }
 
-  initBackground() {
     this.bg = new Interface('.bg');
     this.bg.css({
+      position: 'absolute',
       width: '100%',
       height: '100%',
-      backgroundColor: 'var(--main-bg-color)'
+      backgroundColor: 'var(--bg-color)'
     });
     this.add(this.bg);
-  }
 
-  initContainer() {
     this.container = new Interface('.container');
     this.container.css({
+      position: 'absolute',
       left: '50%',
       top: '50%',
-      width: 128,
+      width: 'var(--ui-panel-width)',
       height: 74,
-      marginLeft: -128 / 2,
+      marginLeft: 'calc(var(--ui-panel-width) / -2)',
       marginTop: -108
     });
     this.add(this.container);
-  }
 
-  initPanel() {
     this.panel = new Panel();
     this.panel.css({
-      position: 'relative',
       marginBottom: 30
     });
     this.container.add(this.panel);
 
-    const items = [
-      {
-        type: 'color',
-        value: Config.LIGHT_COLOR,
-        noText: true,
-        callback: this.onPicking
-      }
-    ];
-
-    items.forEach(data => {
-      const item = new PanelItem(data);
-      this.panel.add(item);
+    const item = new PanelItem({
+      type: 'color',
+      value: lightColor,
+      noText: true,
+      callback: this.onPicking
     });
+    this.panel.add(item);
 
-    this.colorPicker = this.panel.items[0].color;
-    this.colorPicker.fastClose = true;
-  }
+    this.colorPicker = item.view;
 
-  initColor() {
-    this.color = new ColorInput();
+    this.color = new Input({
+      placeholder: new Color(lightColor).getHexString(),
+      maxlength: 6,
+      noTotal: true,
+      noLine: true
+    });
     this.color.css({
       position: 'absolute',
       top: 0,
-      right: 10
+      right: 0,
+      width: 47,
+      height: 19
     });
-    this.panel.add(this.color);
-  }
+    this.container.add(this.color);
 
-  initNumber() {
     this.number = new Interface('.number');
     this.number.css({
       position: 'relative',
@@ -113,20 +90,21 @@ export class PreloaderView extends Interface {
     });
     this.container.add(this.number);
 
-    this.number.inner = new Interface('.inner');
-    this.number.inner.css({
+    this.number.content = new Interface('.content');
+    this.number.content.css({
+      position: 'absolute',
       width: '100%',
-      ...Styles.monospaceLabel,
+      fontSize: 'var(--ui-title-font-size)',
       lineHeight: 25,
+      fontVariantNumeric: 'tabular-nums',
+      letterSpacing: 'var(--ui-title-letter-spacing)',
       textAlign: 'center',
       whiteSpace: 'nowrap',
       opacity: 0.4
     });
-    this.number.inner.text(0);
-    this.number.add(this.number.inner);
-  }
+    this.number.content.text(0);
+    this.number.add(this.number.content);
 
-  initTitle() {
     this.title = new Interface('.title');
     this.title.css({
       position: 'relative',
@@ -140,18 +118,20 @@ export class PreloaderView extends Interface {
     });
     this.container.add(this.title);
 
-    this.title.inner = new Interface('.inner');
-    this.title.inner.css({
+    this.title.content = new Interface('.content');
+    this.title.content.css({
+      position: 'absolute',
       width: '100%',
-      ...Styles.monospaceLabel,
+      fontSize: 'var(--ui-title-font-size)',
       lineHeight: 25,
+      letterSpacing: 'var(--ui-title-letter-spacing)',
       textAlign: 'center',
       textTransform: 'uppercase',
       whiteSpace: 'nowrap',
       opacity: 0.4
     });
-    this.title.inner.text(Device.mobile ? 'Put on your headphones' : 'Turn up your speakers');
-    this.title.add(this.title.inner);
+    this.title.content.text(isMobile ? 'Put on your headphones' : 'Turn up your speakers');
+    this.title.add(this.title.content);
   }
 
   addStartButton() {
@@ -159,8 +139,8 @@ export class PreloaderView extends Interface {
       this.number.hide();
       this.title.css({ y: 10, opacity: 0 }).tween({ y: 0, opacity: 1 }, 1000, 'easeOutQuart', 100);
 
-      this.delayedCall(7000, () => this.swapTitle((Device.mobile ? 'Tap' : 'Click') + ' anywhere'));
-      this.delayedCall(14000, () => this.swapTitle(Device.mobile ? 'Tap tap!' : 'Click!'));
+      this.timeout1 = delayedCall(7000, () => this.swapTitle((isMobile ? 'Tap' : 'Click') + ' anywhere'));
+      this.timeout2 = delayedCall(14000, () => this.swapTitle(isMobile ? 'Tap tap!' : 'Click!'));
     });
   }
 
@@ -170,66 +150,69 @@ export class PreloaderView extends Interface {
         return;
       }
 
-      this.title.inner.text(text);
+      this.title.content.text(text);
       this.title.css({ y: 10 }).tween({ y: 0, opacity: 1 }, 1000, 'easeOutCubic');
     });
   }
 
   addListeners() {
-    Stage.events.on(Events.RESIZE, this.onResize);
+    window.addEventListener('resize', this.onResize);
     this.bg.element.addEventListener('pointerdown', this.onPointerDown);
-    this.color.input.events.on(Events.TYPING, this.onTyping);
-    this.color.events.on(Events.COMPLETE, this.onComplete);
+    this.color.events.on('update', this.onUpdate);
+    this.color.events.on('complete', this.onComplete);
   }
 
   removeListeners() {
-    Stage.events.off(Events.RESIZE, this.onResize);
+    window.removeEventListener('resize', this.onResize);
     this.bg.element.removeEventListener('pointerdown', this.onPointerDown);
-    this.color.input.events.off(Events.TYPING, this.onTyping);
-    this.color.events.off(Events.COMPLETE, this.onComplete);
+    this.color.events.off('update', this.onUpdate);
+    this.color.events.off('complete', this.onComplete);
   }
 
-  /**
-   * Event handlers
-   */
+  // Event handlers
 
   onResize = () => {
-    if (Stage.width < Stage.height) {
+    if (document.documentElement.clientWidth < document.documentElement.clientHeight) {
       this.container.css({ marginTop: -108 });
-    } else if (Stage.width < Config.BREAKPOINT) {
+    } else if (document.documentElement.clientWidth < breakpoint) {
       this.container.css({ marginTop: -74 / 2 });
     } else {
       this.container.css({ marginTop: -108 });
     }
   };
 
-  onTyping = ({ text }) => {
-    this.clearTimeout(this.timeout);
+  onPointerDown = () => {
+    this.events.emit('start');
+  };
 
-    const style = formatColor(text);
+  onUpdate = ({ value }) => {
+    clearTween(this.timeout);
 
-    this.timeout = this.delayedCall(200, () => {
-      this.colorPicker.setValue(style || Config.LIGHT_COLOR);
+    const style = formatColor(value);
 
-      Global.COLOR = this.colorPicker.value.getHexString();
+    this.timeout = delayedCall(200, () => {
+      this.colorPicker.setValue(style || lightColor, false);
 
-      Stage.events.emit(Events.COLOR, { text: Global.COLOR });
+      store.color = this.colorPicker.value.getHexString();
+
+      Stage.events.emit('color', { value: store.color });
     });
   };
 
   onPicking = value => {
-    Global.COLOR = value.getHexString();
+    if (value.getHex() === lightColor) {
+      return;
+    }
 
-    this.color.input.setValue(Global.COLOR);
+    store.color = value.getHexString();
 
-    this.clearTimeout(this.timeout);
-    this.timeout = this.delayedCall(200, () => {
-      Stage.events.emit(Events.COLOR, { text: Global.COLOR });
+    this.color.setValue(store.color);
+
+    clearTween(this.timeout);
+
+    this.timeout = delayedCall(200, () => {
+      Stage.events.emit('color', { value: store.color });
     });
-  };
-
-  onPointerDown = () => {
-    this.events.emit(Events.START);
   };
 
   onComplete = () => {
@@ -237,21 +220,22 @@ export class PreloaderView extends Interface {
       return;
     }
 
-    this.events.emit(Events.START);
+    this.events.emit('start');
   };
 
   onProgress = ({ progress }) => {
     clearTween(this);
+
     tween(this, { progress }, 2000, 'easeInOutSine', null, () => {
-      this.number.inner.text(Math.round(100 * this.progress));
+      this.number.content.text(Math.round(100 * this.progress));
 
       if (this.progress === 1 && !this.isComplete) {
         this.isComplete = true;
 
-        this.events.emit(Events.COMPLETE);
+        this.events.emit('complete');
 
         if (this.color.isComplete) {
-          this.events.emit(Events.START);
+          this.events.emit('start');
         } else {
           this.bg.css({ pointerEvents: 'auto' });
           this.bg.tween({ opacity: 0 }, 2000, 'easeOutSine');
@@ -262,9 +246,7 @@ export class PreloaderView extends Interface {
     });
   };
 
-  /**
-   * Public methods
-   */
+  // Public methods
 
   animateIn = async () => {
     this.panel.animateIn(true);
@@ -272,15 +254,17 @@ export class PreloaderView extends Interface {
     this.color.focus();
   };
 
-  animateOut = callback => {
+  animateOut = () => {
     this.number.clearTween().tween({ opacity: 0 }, 200, 'easeOutSine');
     this.title.clearTween().tween({ opacity: 0 }, 200, 'easeOutSine');
-    this.panel.tween({ opacity: 0 }, 600, 'easeInOutSine');
-    this.tween({ opacity: 0 }, 2000, 'easeOutCubic', 500, callback);
+    return this.tween({ opacity: 0 }, 600, 'easeInOutSine');
   };
 
   destroy = () => {
     this.removeListeners();
+
+    clearTween(this.timeout1);
+    clearTween(this.timeout2);
 
     return super.destroy();
   };

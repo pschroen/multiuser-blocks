@@ -14,9 +14,7 @@ export class SceneController {
     this.physics = new ScenePhysicsController(this.camera, this.view, this.trackers, this.ui);
   }
 
-  /**
-   * Public methods
-   */
+  // Public methods
 
   static resize = (width, height, dpr) => {
     this.view.resize(width, height, dpr);

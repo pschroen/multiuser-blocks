@@ -1,20 +1,20 @@
-import { Interface } from '../utils/Interface.js';
+import { Interface } from '@alienkitty/space.js/three';
 
-export class Trackers extends Interface {
+export class TrackersView extends Interface {
   constructor() {
     super('.trackers');
 
-    this.initHTML();
+    this.init();
   }
 
-  initHTML() {
+  init() {
     this.hide();
     this.css({
+      position: 'absolute',
       left: 0,
       top: 0,
       width: '100%',
       height: '100%',
-      zIndex: 2,
       pointerEvents: 'none',
       webkitUserSelect: 'none',
       userSelect: 'none',
@@ -22,13 +22,15 @@ export class Trackers extends Interface {
     });
   }
 
+  // Public methods
+
   animateIn = () => {
     this.show();
-    this.clearTween().tween({ opacity: 1 }, 4000, 'easeOutSine');
+    this.clearTween().tween({ opacity: 1 }, 2000, 'easeOutSine');
   };
 
   animateOut = () => {
-    this.clearTween().tween({ opacity: 0 }, 350, 'linear', () => {
+    this.clearTween().tween({ opacity: 0 }, 400, 'easeOutCubic', () => {
       this.hide();
     });
   };

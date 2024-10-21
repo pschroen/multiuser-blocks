@@ -1,22 +1,17 @@
 import { Matrix4, Object3D } from 'three';
+import { Sound3D, WebAudio, clamp, delayedCall, mapLinear, tween } from '@alienkitty/space.js/three';
 
-import { Events } from '../../config/Events.js';
-import { Global } from '../../config/Global.js';
-import { WebAudio } from '../../utils/audio/WebAudio.js';
-import { Sound3D } from '../../utils/audio/Sound3D.js';
-import { WorldController } from '../world/WorldController.js';
-import { Stage } from '../Stage.js';
-
-import { delayedCall, tween } from '../../tween/Tween.js';
-import { clamp, range } from '../../utils/Utils.js';
+import { store } from '../../config/Config.js';
 
 export class AudioController {
-  static init(view) {
-    if (!Global.SOUND) {
+  static init(camera, view, ui) {
+    this.camera = camera;
+    this.view = view;
+    this.ui = ui;
+
+    if (!store.sound) {
       WebAudio.mute(true);
     }
-
-    this.view = view;
 
     this.object = new Object3D();
     this.matrix = new Matrix4();
@@ -25,15 +20,14 @@ export class AudioController {
   }
 
   static addListeners() {
-    Stage.events.on(Events.VISIBILITY, this.onVisibility);
+    document.addEventListener('visibilitychange', this.onVisibility);
+    window.addEventListener('beforeunload', this.onBeforeUnload);
   }
 
-  /**
-   * Event handlers
-   */
+  // Event handlers
 
   static onVisibility = () => {
-    if (!Global.SOUND) {
+    if (!store.sound) {
       return;
     }
 
@@ -44,9 +38,11 @@ export class AudioController {
     }
   };
 
-  /**
-   * Public methods
-   */
+  static onBeforeUnload = () => {
+    WebAudio.mute();
+  };
+
+  // Public methods
 
   static trigger = (event, body, force) => {
     switch (event) {
@@ -68,12 +64,12 @@ export class AudioController {
           object = this.view.fwa;
         }
 
-        const gong = new Sound3D(WorldController.camera, 'gong');
+        const gong = new Sound3D(this.camera, 'gong');
         gong.position.copy(object.position);
         gong.quaternion.copy(object.quaternion);
         gong.updateMatrixWorld();
 
-        const strength = range(force, 0, 4, 0, 1, true);
+        const strength = clamp(mapLinear(force, 0, 4, 0, 1), 0, 1);
         gong.sound.gain.set(strength * 0.7);
         gong.sound.playbackRate.set(clamp(0.8 + strength * 0.4, 0.8, 1.2));
         gong.sound.play();
@@ -99,9 +95,14 @@ export class AudioController {
         tween(WebAudio.gain, { value: 0 }, 500, 'easeOutSine');
         break;
       case 'sound_on':
-        tween(WebAudio.gain, { value: Global.DETAILS_OPEN ? 0.3 : 1 }, 500, 'easeOutSine');
+        tween(WebAudio.gain, { value: this.ui.isDetailsOpen ? 0.3 : 1 }, 500, 'easeOutSine');
         break;
     }
+  };
+
+  static start = () => {
+    this.trigger('blocks_start');
+    this.trigger('cymbal');
   };
 
   static mute = () => {

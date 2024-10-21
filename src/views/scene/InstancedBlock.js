@@ -1,14 +1,15 @@
-import { BoxGeometry, Color, DynamicDrawUsage, Group, InstancedBufferAttribute, InstancedMesh, Matrix4, MeshStandardMaterial, RepeatWrapping, ShaderChunk, Uniform, Vector2, Vector3 } from 'three';
+import { BoxGeometry, Color, DynamicDrawUsage, Group, InstancedBufferAttribute, InstancedMesh, MathUtils, Matrix4, MeshStandardMaterial, RepeatWrapping, ShaderChunk, Vector2, Vector3 } from 'three';
+import { headsTails } from '@alienkitty/space.js/three';
 
-import { Layer } from '../../config/Layer.js';
 import { WorldController } from '../../controllers/world/WorldController.js';
 
-import { headsTails, random } from '../../utils/Utils.js';
+import { layers } from '../../config/Config.js';
 
 export class InstancedBlock extends Group {
   constructor() {
     super();
 
+    // Physics
     this.size = new Vector3(0.5, 0.5, 0.5);
   }
 
@@ -17,8 +18,9 @@ export class InstancedBlock extends Group {
 
     const geometry = new BoxGeometry(this.size.x, this.size.y, this.size.z);
 
-    // 2nd set of UV's for aoMap and lightMap
-    geometry.attributes.uv2 = geometry.attributes.uv;
+    // Second set of UVs for aoMap and lightMap
+    // https://threejs.org/docs/#api/en/materials/MeshStandardMaterial.aoMap
+    geometry.attributes.uv1 = geometry.attributes.uv;
 
     // Textures
     const [map, normalMap, ormMap, thicknessMap] = await Promise.all([
@@ -52,31 +54,35 @@ export class InstancedBlock extends Group {
 
     const material = new MeshStandardMaterial({
       color: new Color().offsetHSL(0, 0, -0.65),
-      roughness: 2,
       metalness: 0.6,
+      roughness: 2,
       map,
+      metalnessMap: ormMap,
+      roughnessMap: ormMap,
       aoMap: ormMap,
       aoMapIntensity: 1,
-      roughnessMap: ormMap,
-      metalnessMap: ormMap,
       normalMap,
-      normalScale: new Vector2(3, 3),
-      envMapIntensity: 1
+      normalScale: new Vector2(3, 3)
     });
 
-    // Based on {@link module:three/examples/jsm/shaders/SubsurfaceScatteringShader.js} by daoshengmu
+    // Second channel for aoMap and lightMap
+    // https://threejs.org/docs/#api/en/materials/MeshStandardMaterial.aoMap
+    material.aoMap.channel = 1;
+
+    // Based on https://github.com/mrdoob/three.js/blob/dev/examples/jsm/shaders/SubsurfaceScatteringShader.js by daoshengmu
+    // Based on https://gist.github.com/mattdesl/2ee82157a86962347dedb6572142df7c
 
     material.onBeforeCompile = shader => {
-      shader.uniforms.thicknessMap = new Uniform(thicknessMap);
-      shader.uniforms.thicknessDistortion = new Uniform(0);
-      shader.uniforms.thicknessAmbient = new Uniform(0);
-      shader.uniforms.thicknessAttenuation = new Uniform(1);
-      shader.uniforms.thicknessPower = new Uniform(16);
-      shader.uniforms.thicknessScale = new Uniform(64);
+      shader.uniforms.thicknessMap = { value: thicknessMap };
+      shader.uniforms.thicknessDistortion = { value: 0 };
+      shader.uniforms.thicknessAmbient = { value: 0 };
+      shader.uniforms.thicknessAttenuation = { value: 1 };
+      shader.uniforms.thicknessPower = { value: 16 };
+      shader.uniforms.thicknessScale = { value: 64 };
 
       shader.vertexShader = shader.vertexShader.replace(
         '#include <common>',
-        /* glsl */`
+        /* glsl */ `
         attribute vec2 instanceRandom;
         #include <common>
         `
@@ -84,15 +90,18 @@ export class InstancedBlock extends Group {
 
       shader.vertexShader = shader.vertexShader.replace(
         '#include <begin_vertex>',
-        /* glsl */`
+        /* glsl */ `
         #include <begin_vertex>
-        vUv *= instanceRandom;
+        vMapUv *= instanceRandom;
+        vMetalnessMapUv *= instanceRandom;
+        vRoughnessMapUv *= instanceRandom;
+        vAoMapUv *= instanceRandom;
         `
       );
 
       shader.fragmentShader = shader.fragmentShader.replace(
         'void main() {',
-        /* glsl */`
+        /* glsl */ `
         uniform sampler2D thicknessMap;
         uniform float thicknessDistortion;
         uniform float thicknessAmbient;
@@ -100,10 +109,10 @@ export class InstancedBlock extends Group {
         uniform float thicknessPower;
         uniform float thicknessScale;
 
-        void RE_Direct_Scattering(IncidentLight directLight, vec2 uv, GeometricContext geometry, PhysicalMaterial material, inout ReflectedLight reflectedLight) {
+        void RE_Direct_Scattering(IncidentLight directLight, vec2 uv, vec3 geometryPosition, vec3 geometryNormal, vec3 geometryViewDir, vec3 geometryClearcoatNormal, PhysicalMaterial material, inout ReflectedLight reflectedLight) {
           vec3 thickness = directLight.color * texture(thicknessMap, uv).r;
-          vec3 scatteringHalf = normalize(directLight.direction + (geometry.normal * thicknessDistortion));
-          float scatteringDot = pow(saturate(dot(geometry.viewDir, -scatteringHalf)), thicknessPower) * thicknessScale;
+          vec3 scatteringHalf = normalize(directLight.direction + (geometryNormal * thicknessDistortion));
+          float scatteringDot = pow(saturate(dot(geometryViewDir, -scatteringHalf)), thicknessPower) * thicknessScale;
           vec3 scatteringIllu = (scatteringDot + thicknessAmbient) * thickness;
           reflectedLight.directDiffuse += material.diffuseColor * directLight.color * scatteringIllu * thicknessAttenuation;
         }
@@ -116,10 +125,10 @@ export class InstancedBlock extends Group {
         '#include <lights_fragment_begin>',
         // ShaderChunk.lights_fragment_begin.replaceAll(
         ShaderChunk.lights_fragment_begin.replace(
-          'RE_Direct( directLight, geometry, material, reflectedLight );',
-          /* glsl */`
-          // RE_Direct( directLight, geometry, material, reflectedLight );
-          RE_Direct_Scattering(directLight, vUv2, geometry, material, reflectedLight);
+          'RE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );',
+          /* glsl */ `
+          // RE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );
+          RE_Direct_Scattering(directLight, vAoMapUv, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight);
           `
         )
       );
@@ -129,7 +138,7 @@ export class InstancedBlock extends Group {
     mesh.instanceMatrix.setUsage(DynamicDrawUsage); // Will be updated every frame
     mesh.castShadow = true;
     mesh.receiveShadow = true;
-    mesh.layers.enable(Layer.PICKING);
+    mesh.layers.enable(layers.picking);
     this.add(mesh);
 
     const matrix = new Matrix4();
@@ -143,7 +152,10 @@ export class InstancedBlock extends Group {
         matrix.setPosition(-2.25 + (0.5 * i), 2.25 + (0.5 * j), 0);
         mesh.setMatrixAt(index, matrix);
 
-        instanceRandom.set([random(0.5, 1, 2) * headsTails(1, -1), random(0.5, 1, 2) * headsTails(1, -1)], index * 2);
+        instanceRandom.set(
+          [MathUtils.randFloat(0.5, 1) * headsTails(1, -1), MathUtils.randFloat(0.5, 1) * headsTails(1, -1)],
+          index * 2
+        );
       }
     }
 
@@ -157,18 +169,21 @@ export class InstancedBlock extends Group {
         matrix.setPosition(-1.125 + (0.25 * i), 3.75 + (0.25 * j), 0);
         mesh.setMatrixAt(index, matrix);
 
-        instanceRandom.set([random(0.5, 1, 2) * headsTails(1, -1), random(0.5, 1, 2) * headsTails(1, -1)], index * 2);
+        instanceRandom.set(
+          [MathUtils.randFloat(0.5, 1) * headsTails(1, -1), MathUtils.randFloat(0.5, 1) * headsTails(1, -1)],
+          index * 2
+        );
       }
     }
 
     geometry.setAttribute('instanceRandom', new InstancedBufferAttribute(instanceRandom, 2));
 
+    mesh.computeBoundingSphere();
+
     this.mesh = mesh;
   }
 
-  /**
-   * Public methods
-   */
+  // Public methods
 
   ready = () => this.initMesh();
 }

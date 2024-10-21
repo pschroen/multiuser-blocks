@@ -1,22 +1,15 @@
 import { Color, Vector2, Vector3 } from 'three';
+import { Reticle, Stage, Thread, clamp, delayedCall, mapLinear, tween } from '@alienkitty/space.js/three';
+import { Wobble } from '@alienkitty/alien.js/three';
+import { OimoPhysicsController } from '@alienkitty/alien.js/three/oimophysics';
 
-import { Config } from '../../config/Config.js';
-import { Device } from '../../config/Device.js';
-import { Events } from '../../config/Events.js';
-import { Global } from '../../config/Global.js';
-import { Thread } from '../../utils/Thread.js';
 import { Data } from '../../data/Data.js';
 import { Socket } from '../../data/Socket.js';
 import { SocketThread } from '../../data/SocketThread.js';
-import { OimoPhysicsController } from '../../utils/physics/OimoPhysicsController.js';
-import { Wobble } from '../../utils/world/Wobble.js';
 import { AudioController } from '../audio/AudioController.js';
-import { Stage } from '../Stage.js';
-import { Tracker } from '../../views/ui/Tracker.js';
 
-import { delayedCall, tween } from '../../tween/Tween.js';
-import { range } from '../../utils/Utils.js';
-import { formatColor, nearEqualsRGB } from '../../utils/MultiuserBlocksUtils.js';
+import { breakpoint, lightColor, numPointers, store } from '../../config/Config.js';
+import { formatColor, nearEqualsRGB } from '../../utils/Utils.js';
 
 export class ScenePhysicsController extends OimoPhysicsController {
   constructor(camera, view, trackers, ui) {
@@ -27,7 +20,6 @@ export class ScenePhysicsController extends OimoPhysicsController {
     this.trackers = trackers;
     this.header = ui.header;
 
-    this.promise = new Promise(resolve => this.resolve = resolve);
     this.id = null;
     this.array = null;
     this.buffer = [];
@@ -39,7 +31,7 @@ export class ScenePhysicsController extends OimoPhysicsController {
     this.animatedIn = false;
 
     // Start position
-    this.position = new Vector3(0, 4.25, 3);
+    this.position = new Vector3();
     this.point = new Vector3();
 
     this.wobble = new Wobble(this.position);
@@ -48,6 +40,12 @@ export class ScenePhysicsController extends OimoPhysicsController {
 
     this.halfScreen = new Vector2();
     this.screenSpacePosition = new Vector3();
+
+    // Promise with resolvers
+    // this.promise
+    // this.resolve
+    // this.reject
+    Object.assign(this, Promise.withResolvers());
   }
 
   init() {
@@ -110,59 +108,45 @@ export class ScenePhysicsController extends OimoPhysicsController {
     const server = `${protocol}//${location.hostname}${port}`;
     // const server = 'wss://multiuser-blocks.glitch.me';
 
-    if (!Device.agent.includes('firefox')) {
-      this.thread = new Thread({
-        imports: [
-          // Make sure to export these from App.js
-          [import.meta.url, 'EventEmitter']
-        ],
-        classes: [Socket],
-        controller: [SocketThread, 'init', 'color', 'pick', 'motion']
-      });
+    this.thread = new Thread({
+      imports: [
+        // Make sure to export these from App.js
+        [import.meta.url, 'EventEmitter']
+      ],
+      classes: [Socket],
+      controller: [SocketThread, 'init', 'color', 'pick', 'motion']
+    });
 
-      // this.thread.init({ shapes: this.shapes });
-      this.thread.init({ server });
-    } else {
-      this.socket = new Socket(server);
-    }
+    // this.thread.init({ shapes: this.shapes });
+    this.thread.init({ server });
   }
 
   addListeners() {
-    Stage.events.on(Events.COLOR, this.onColor);
-    Stage.events.on(Events.VISIBILITY, this.onVisibility);
+    Stage.events.on('color', this.onColor);
+    document.addEventListener('visibilitychange', this.onVisibility);
 
-    if (this.thread) {
-      this.thread.on('close', this.onClose);
-      this.thread.on('users', this.onUsers);
-      this.thread.on('heartbeat', this.onHeartbeat);
-      this.thread.on('buffer', this.onBuffer);
-      this.thread.on('contact', this.onContact);
-    } else {
-      this.socket.on('close', this.onClose);
-      this.socket.on('users', this.onUsers);
-      this.socket.on('heartbeat', this.onHeartbeat);
-      this.socket.on('buffer', this.onBuffer);
-      this.socket.on('contact', this.onContact);
-    }
+    this.thread.on('close', this.onClose);
+    this.thread.on('users', this.onUsers);
+    this.thread.on('heartbeat', this.onHeartbeat);
+    this.thread.on('buffer', this.onBuffer);
+    this.thread.on('contact', this.onContact);
   }
 
-  /**
-   * Event handlers
-   */
+  // Event handlers
 
-  onColor = ({ text }) => {
+  onColor = ({ value }) => {
     if (!this.id) {
       return;
     }
 
     const id = this.id;
-    const style = formatColor(text);
+    const style = formatColor(value);
 
-    this.pointer[id].target.set(style || Config.LIGHT_COLOR);
+    this.pointer[id].target.set(style || lightColor);
     this.pointer[id].last.copy(this.pointer[id].target);
     this.pointer[id].needsUpdate = true;
 
-    this.color(text);
+    this.color(value);
   };
 
   onVisibility = () => {
@@ -174,9 +158,9 @@ export class ScenePhysicsController extends OimoPhysicsController {
   };
 
   onUsers = ({ users }) => {
-    Global.USERS = users;
+    store.users = users;
 
-    Stage.events.emit(Events.UPDATE, users);
+    Stage.events.emit('update', users);
 
     if (!this.id) {
       return;
@@ -190,16 +174,16 @@ export class ScenePhysicsController extends OimoPhysicsController {
         return;
       }
 
-      if (!this.pointer[id] && Object.keys(this.pointer).length - 1 < Global.NUM_POINTERS) {
+      if (!this.pointer[id] && Object.keys(this.pointer).length - 1 < numPointers) {
         this.pointer[id] = {};
         this.pointer[id].needsUpdate = false;
         this.pointer[id].color = new Color();
         this.pointer[id].last = new Color();
         this.pointer[id].target = new Color();
-        this.pointer[id].target.set(Config.LIGHT_COLOR);
+        this.pointer[id].target.set(lightColor);
         this.pointer[id].color.copy(this.pointer[id].target);
         this.pointer[id].last.copy(this.pointer[id].color);
-        this.pointer[id].tracker = this.trackers.add(new Tracker());
+        this.pointer[id].tracker = this.trackers.add(new Reticle());
 
         const i = Number(id);
         this.view.ball.color.copy(this.pointer[id].color);
@@ -220,12 +204,12 @@ export class ScenePhysicsController extends OimoPhysicsController {
         const data = Data.getUser(id);
 
         if (this.pointer[id].tracker) {
-          this.pointer[id].tracker.setData(data);
+          this.pointer[id].tracker.setData(Data.getReticleData(id));
         }
 
         const style = formatColor(data.color);
 
-        this.pointer[id].target.set(style || Config.LIGHT_COLOR);
+        this.pointer[id].target.set(style || lightColor);
 
         if (!this.pointer[id].target.equals(this.pointer[id].last)) {
           this.pointer[id].last.copy(this.pointer[id].target);
@@ -257,11 +241,11 @@ export class ScenePhysicsController extends OimoPhysicsController {
       this.pointer[id].color = new Color();
       this.pointer[id].last = new Color();
       this.pointer[id].target = new Color();
-      this.pointer[id].target.set(Config.LIGHT_COLOR);
+      this.pointer[id].target.set(lightColor);
       this.pointer[id].color.copy(this.pointer[id].target);
       this.pointer[id].last.copy(this.pointer[id].color);
 
-      this.onColor({ text: Global.COLOR });
+      this.onColor({ value: store.color });
 
       this.resolve();
     }
@@ -283,9 +267,7 @@ export class ScenePhysicsController extends OimoPhysicsController {
     AudioController.trigger('gong', body, force);
   };
 
-  /**
-   * Public methods
-   */
+  // Public methods
 
   resize = (width, height) => {
     this.halfScreen.set(width / 2, height / 2);
@@ -297,7 +279,7 @@ export class ScenePhysicsController extends OimoPhysicsController {
     if (width < height) {
       this.position.y = 5;
       this.position.z = 3;
-    } else if (width < Config.BREAKPOINT) {
+    } else if (width < breakpoint) {
       this.position.y = 5.25;
       this.position.z = 4;
     } else {
@@ -359,7 +341,7 @@ export class ScenePhysicsController extends OimoPhysicsController {
                     const centerX = this.halfScreen.x + this.screenSpacePosition.x;
                     const centerY = this.halfScreen.y - this.screenSpacePosition.y;
 
-                    this.pointer[id].tracker.css({ left: Math.round(centerX), top: Math.round(centerY) });
+                    this.pointer[id].tracker.css({ left: centerX, top: centerY });
 
                     if (!this.pointer[id].tracker.animatedIn) {
                       this.pointer[id].tracker.animateIn();
@@ -393,7 +375,7 @@ export class ScenePhysicsController extends OimoPhysicsController {
                 strength = 0;
               }
 
-              this.object.scale.setScalar(range(strength, 0, 0.8, 0, 1, true));
+              this.object.scale.setScalar(clamp(mapLinear(strength, 0, 0.8, 0, 1), 0, 1));
 
               object.geometry.attributes.instanceVisibility.array[j] = strength;
               object.geometry.attributes.instanceVisibility.needsUpdate = true;
@@ -413,6 +395,7 @@ export class ScenePhysicsController extends OimoPhysicsController {
           }
 
           object.instanceMatrix.needsUpdate = true;
+          object.computeBoundingSphere();
         } else {
           object.position.fromArray(array, index);
           object.quaternion.fromArray(array, index + 3);
@@ -456,11 +439,7 @@ export class ScenePhysicsController extends OimoPhysicsController {
       return;
     }
 
-    if (this.thread) {
-      this.thread.color({ text });
-    } else {
-      this.socket.color(text);
-    }
+    this.thread.color({ text });
   };
 
   pick = event => {
@@ -468,11 +447,7 @@ export class ScenePhysicsController extends OimoPhysicsController {
       return;
     }
 
-    if (this.thread) {
-      this.thread.pick({ event });
-    } else {
-      this.socket.pick(event);
-    }
+    this.thread.pick({ event });
   };
 
   motion = event => {
@@ -480,11 +455,7 @@ export class ScenePhysicsController extends OimoPhysicsController {
       return;
     }
 
-    if (this.thread) {
-      this.thread.motion({ event });
-    } else {
-      this.socket.motion(event);
-    }
+    this.thread.motion({ event });
   };
 
   ready = () => Promise.all([
