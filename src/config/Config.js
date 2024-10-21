@@ -10,12 +10,12 @@ export const breakpoint = 1000;
 export const numPointers = 22; // iOS limit
 
 export const store = {
-  users: [],
-  sound: true,
-  color: ''
+	users: [],
+	sound: true,
+	color: ''
 };
 
 export const layers = {
-  default: 0,
-  picking: 1
+	default: 0,
+	picking: 1
 };

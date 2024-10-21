@@ -10,72 +10,72 @@ import { InstancedBlock } from './scene/InstancedBlock.js';
 import { InstancedBall } from './scene/InstancedBall.js';
 
 export class SceneView extends Group {
-  constructor() {
-    super();
+	constructor() {
+		super();
 
-    this.visible = false;
+		this.visible = false;
 
-    this.initViews();
-  }
+		this.initViews();
+	}
 
-  initViews() {
-    this.fwa = new FWA();
-    this.add(this.fwa);
+	initViews() {
+		this.fwa = new FWA();
+		this.add(this.fwa);
 
-    // this.long = new LongBlock();
-    // this.add(this.long);
+		// this.long = new LongBlock();
+		// this.add(this.long);
 
-    this.awwwards = new Awwwards();
-    this.add(this.awwwards);
+		this.awwwards = new Awwwards();
+		this.add(this.awwwards);
 
-    this.awwwardsBall = new AwwwardsBall();
-    this.add(this.awwwardsBall);
+		this.awwwardsBall = new AwwwardsBall();
+		this.add(this.awwwardsBall);
 
-    this.block = new InstancedBlock();
-    this.add(this.block);
+		this.block = new InstancedBlock();
+		this.add(this.block);
 
-    this.ball = new InstancedBall();
-    this.add(this.ball);
+		this.ball = new InstancedBall();
+		this.add(this.ball);
 
-    this.floor = new Floor(this.ball);
-    this.add(this.floor);
-  }
+		this.floor = new Floor(this.ball);
+		this.add(this.floor);
+	}
 
-  addListeners() {
-    InputManager.add(...this.fwa.children);
-    // InputManager.add(...this.long.children);
-    InputManager.add(...this.awwwards.children);
-    InputManager.add(...this.awwwardsBall.children);
-    InputManager.add(...this.block.children);
-  }
+	addListeners() {
+		InputManager.add(...this.fwa.children);
+		// InputManager.add(...this.long.children);
+		InputManager.add(...this.awwwards.children);
+		InputManager.add(...this.awwwardsBall.children);
+		InputManager.add(...this.block.children);
+	}
 
-  removeListeners() {
-    InputManager.remove(...this.fwa.children);
-    // InputManager.remove(...this.long.children);
-    InputManager.remove(...this.awwwards.children);
-    InputManager.remove(...this.awwwardsBall.children);
-    InputManager.remove(...this.block.children);
-  }
+	removeListeners() {
+		InputManager.remove(...this.fwa.children);
+		// InputManager.remove(...this.long.children);
+		InputManager.remove(...this.awwwards.children);
+		InputManager.remove(...this.awwwardsBall.children);
+		InputManager.remove(...this.block.children);
+	}
 
-  // Public methods
+	// Public methods
 
-  resize = (width, height, dpr) => {
-    this.floor.resize(width, height, dpr);
-  };
+	resize = (width, height, dpr) => {
+		this.floor.resize(width, height, dpr);
+	};
 
-  animateIn = () => {
-    this.addListeners();
+	animateIn = () => {
+		this.addListeners();
 
-    this.visible = true;
-  };
+		this.visible = true;
+	};
 
-  ready = () => Promise.all([
-    this.floor.ready(),
-    this.fwa.ready(),
-    // this.long.ready(),
-    this.awwwards.ready(),
-    this.awwwardsBall.ready(),
-    this.block.ready(),
-    this.ball.ready()
-  ]);
+	ready = () => Promise.all([
+		this.floor.ready(),
+		this.fwa.ready(),
+		// this.long.ready(),
+		this.awwwards.ready(),
+		this.awwwardsBall.ready(),
+		this.block.ready(),
+		this.ball.ready()
+	]);
 }

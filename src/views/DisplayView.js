@@ -3,38 +3,38 @@ import { Group } from 'three';
 import { BallView } from './display/BallView.js';
 
 export class DisplayView extends Group {
-  constructor() {
-    super();
+	constructor() {
+		super();
 
-    this.visible = false;
+		this.visible = false;
 
-    this.initViews();
-  }
+		this.initViews();
+	}
 
-  initViews() {
-    this.ball = new BallView();
-    this.add(this.ball);
-  }
+	initViews() {
+		this.ball = new BallView();
+		this.add(this.ball);
+	}
 
-  // Public methods
+	// Public methods
 
-  resize = (width, height, dpr) => {
-    this.ball.resize(width, height, dpr);
-  };
+	resize = (width, height, dpr) => {
+		this.ball.resize(width, height, dpr);
+	};
 
-  update = () => {
-  };
+	update = () => {
+	};
 
-  animateIn = () => {
-    this.ball.animateIn();
+	animateIn = () => {
+		this.ball.animateIn();
 
-    this.visible = true;
-  };
+		this.visible = true;
+	};
 
-  toggle = show => {
-    this.ball.toggle(show);
-  };
+	toggle = show => {
+		this.ball.toggle(show);
+	};
 
-  ready = () => Promise.all([
-  ]);
+	ready = () => Promise.all([
+	]);
 }
