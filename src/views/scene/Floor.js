@@ -64,6 +64,7 @@ export class Floor extends Group {
 				/* glsl */ `
 				uniform mat3 uvTransform;
 				uniform mat4 textureMatrix;
+
 				out vec2 vUv;
 				out vec4 vCoord;
 
@@ -124,8 +125,10 @@ export class Floor extends Group {
 					gl_FragColor.rgb *= 0.6;
 				#endif
 
+				// Shadow
 				gl_FragColor.rgb -= (1.0 - getShadowMask()) * 0.025;
 
+				// Dithering
 				gl_FragColor.rgb = dither(gl_FragColor.rgb);
 				gl_FragColor.a = 1.0;
 				`
@@ -133,7 +136,7 @@ export class Floor extends Group {
 		};
 
 		const mesh = new Mesh(geometry, material);
-		mesh.position.y = 2.494;
+		mesh.position.y = 2.494; // 5 / 2 - 0.006
 		mesh.rotation.x = -Math.PI / 2;
 		mesh.receiveShadow = true;
 		mesh.add(this.reflector);

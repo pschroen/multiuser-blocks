@@ -3,6 +3,7 @@ import { AdditiveBlending, GLSL3, RawShaderMaterial } from 'three';
 import { WorldController } from '../controllers/world/WorldController.js';
 
 import rgbshift from '@alienkitty/alien.js/src/shaders/modules/rgbshift/rgbshift.glsl.js';
+import dither from '@alienkitty/alien.js/src/shaders/modules/dither/dither.glsl.js';
 
 const vertexShader = /* glsl */ `
 in vec3 position;
@@ -22,7 +23,7 @@ precision highp float;
 
 uniform sampler2D tBloom;
 uniform sampler2D tLensDirt;
-uniform float uDistortion;
+uniform float uBloomDistortion;
 uniform bool uLensDirt;
 uniform vec2 uResolution;
 
@@ -31,11 +32,12 @@ in vec2 vUv;
 out vec4 FragColor;
 
 ${rgbshift}
+${dither}
 
 void main() {
 	float center = length(vUv - 0.5);
 
-	FragColor = getRGB(tBloom, vUv, center, 0.001 * uDistortion);
+	FragColor = getRGB(tBloom, vUv, center, 0.001 * uBloomDistortion);
 
 	// Dirt lens texture
 	if (uLensDirt) {
@@ -58,6 +60,10 @@ void main() {
 
 		FragColor.rgb += smoothstep(0.0, 0.4, FragColor.rgb) * texture(tLensDirt, vUv2).rgb;
 	}
+
+	// Dithering
+	FragColor.rgb = dither(FragColor.rgb);
+	FragColor.a = 1.0;
 }
 `;
 
@@ -70,7 +76,7 @@ export class DirtMaterial extends RawShaderMaterial {
 			uniforms: {
 				tBloom: { value: null },
 				tLensDirt: { value: getTexture('assets/textures/lens_dirt.jpg') },
-				uDistortion: { value: 1 },
+				uBloomDistortion: { value: 1 },
 				uLensDirt: { value: true },
 				uResolution: resolution
 			},

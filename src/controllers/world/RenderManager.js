@@ -23,14 +23,14 @@ export class RenderManager {
 		this.luminosityThreshold = 0.1;
 		this.luminositySmoothing = 1;
 		this.bloomStrength = 0.3;
-		this.bloomRadius = 0.75;
+		this.bloomRadius = 0.2;
 		this.bloomDistortion = 1;
 
 		// Final
 		this.distortion = 0.2;
+		this.grainAmount = 0.03;
 		this.boost = 1.1;
 		this.reduction = 0.9;
-		this.grainAmount = 0.03;
 
 		this.initRenderer();
 	}
@@ -99,14 +99,14 @@ export class RenderManager {
 
 			// Composite material
 			this.compositeMaterial = new CompositeMaterial();
-			this.compositeMaterial.uniforms.uDistortion.value = this.distortion;
+			this.compositeMaterial.uniforms.uRGBAmount.value = this.distortion;
+			this.compositeMaterial.uniforms.uGrainAmount.value = this.grainAmount;
 			this.compositeMaterial.uniforms.uBoost.value = this.boost;
 			this.compositeMaterial.uniforms.uReduction.value = this.reduction;
-			this.compositeMaterial.uniforms.uGrainAmount.value = this.grainAmount;
 
 			// Dirt material
 			this.dirtMaterial = new DirtMaterial();
-			this.dirtMaterial.uniforms.uDistortion.value = this.bloomDistortion;
+			this.dirtMaterial.uniforms.uBloomDistortion.value = this.bloomDistortion;
 		} else {
 			this.renderTargetA.depthBuffer = true;
 
@@ -252,10 +252,10 @@ export class RenderManager {
 			return;
 		}
 
-		this.compositeMaterial.uniforms.uDistortion.value = 0;
+		this.compositeMaterial.uniforms.uRGBAmount.value = 0;
+		this.compositeMaterial.uniforms.uGrainAmount.value = 0;
 		this.compositeMaterial.uniforms.uBoost.value = 1;
 		this.compositeMaterial.uniforms.uReduction.value = 0;
-		this.compositeMaterial.uniforms.uGrainAmount.value = 0;
 	};
 
 	static animateIn = () => {
@@ -263,9 +263,9 @@ export class RenderManager {
 			return;
 		}
 
-		tween(this.compositeMaterial.uniforms.uDistortion, { value: this.distortion }, 1000, 'easeOutQuart');
+		tween(this.compositeMaterial.uniforms.uRGBAmount, { value: this.distortion }, 1000, 'easeOutQuart');
+		tween(this.compositeMaterial.uniforms.uGrainAmount, { value: this.grainAmount }, 1000, 'easeOutQuart');
 		tween(this.compositeMaterial.uniforms.uBoost, { value: this.boost }, 1000, 'easeOutQuart');
 		tween(this.compositeMaterial.uniforms.uReduction, { value: this.reduction }, 1000, 'easeOutQuart');
-		tween(this.compositeMaterial.uniforms.uGrainAmount, { value: this.grainAmount }, 1000, 'easeOutQuart');
 	};
 }

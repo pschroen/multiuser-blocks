@@ -1,4 +1,4 @@
-import { AmbientLight, BasicShadowMap, Color, ColorManagement, DirectionalLight, HemisphereLight, LinearSRGBColorSpace, OrthographicCamera, PerspectiveCamera, PlaneGeometry, Scene, Vector2, WebGLRenderer } from 'three';
+import { BasicShadowMap, Color, ColorManagement, DirectionalLight, HemisphereLight, LinearSRGBColorSpace, OrthographicCamera, PerspectiveCamera, PlaneGeometry, Scene, Vector2, WebGLRenderer } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { BufferGeometryLoader, EnvironmentTextureLoader, Stage, TextureLoader, getFullscreenTriangle } from '@alienkitty/space.js/three';
 
@@ -62,11 +62,9 @@ export class WorldController {
 	}
 
 	static initLights() {
-		this.scene.add(new AmbientLight(0xffffff, 0.2));
+		this.scene.add(new HemisphereLight(0x606060, 0x404040, 3));
 
-		this.scene.add(new HemisphereLight(0x606060, 0x404040));
-
-		const light = new DirectionalLight(0xffffff, 0.4);
+		const light = new DirectionalLight(0xffffff, 2);
 		light.position.set(5, 5, 5);
 		light.castShadow = true;
 		light.shadow.mapSize.width = 2048;

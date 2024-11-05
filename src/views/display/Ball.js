@@ -6,19 +6,21 @@ export class Ball extends Group {
 	constructor() {
 		super();
 
+		// Physics
 		this.radius = 0.075;
 
 		this.initMesh();
 		this.initLight();
+		this.setColor(this.light.color);
 	}
 
 	initMesh() {
 		const geometry = new IcosahedronGeometry(this.radius, 3);
 
 		const material = new MeshPhongMaterial({
-			color: new Color(lightColor),
-			emissive: new Color(lightColor).offsetHSL(0, 0, -0.3),
-			emissiveIntensity: 0.4
+			color: new Color(0.5, 0.5, 0.5),
+			emissive: new Color(lightColor),
+			emissiveIntensity: 0.9
 		});
 
 		// Based on https://github.com/mrdoob/three.js/blob/dev/examples/jsm/shaders/SubsurfaceScatteringShader.js by daoshengmu
@@ -26,7 +28,7 @@ export class Ball extends Group {
 		material.onBeforeCompile = shader => {
 			shader.uniforms.thicknessDistortion = { value: 0.1 };
 			shader.uniforms.thicknessAmbient = { value: 0 };
-			shader.uniforms.thicknessAttenuation = { value: 0.8 };
+			shader.uniforms.thicknessAttenuation = { value: 0.2 };
 			shader.uniforms.thicknessPower = { value: 2 };
 			shader.uniforms.thicknessScale = { value: 16 };
 
@@ -71,7 +73,7 @@ export class Ball extends Group {
 	}
 
 	initLight() {
-		const light = new PointLight(lightColor, 0.2);
+		const light = new PointLight(lightColor, 1, 1, 0);
 		this.add(light);
 
 		this.light = light;
@@ -80,8 +82,7 @@ export class Ball extends Group {
 	// Public methods
 
 	setColor = color => {
-		this.material.color.copy(color);
-		this.material.emissive.copy(color).offsetHSL(0, 0, -0.3);
-		this.light.color.copy(color);
+		this.material.emissive.copy(color);
+		this.light.color.copy(color).lerp(this.material.color, 0.94);
 	};
 }

@@ -99,9 +99,9 @@ export class FWA extends Group {
 
 	async initMaterial() {
 		const material = new MeshPhongMaterial({
-			color: new Color(lightColor).offsetHSL(0, 0, -0.035),
-			emissive: new Color(lightColor).offsetHSL(0, 0, -0.65),
-			emissiveIntensity: 0.4
+			color: new Color(lightColor).offsetHSL(0, -0.1, -0.035),
+			emissive: new Color(lightColor).offsetHSL(0, -0.1, -0.525),
+			emissiveIntensity: 1.2
 		});
 
 		// Based on https://github.com/mrdoob/three.js/blob/dev/examples/jsm/shaders/SubsurfaceScatteringShader.js by daoshengmu
@@ -110,8 +110,8 @@ export class FWA extends Group {
 			shader.uniforms.thicknessDistortion = { value: 0 };
 			shader.uniforms.thicknessAmbient = { value: 0 };
 			shader.uniforms.thicknessAttenuation = { value: 1 };
-			shader.uniforms.thicknessPower = { value: 32 };
-			shader.uniforms.thicknessScale = { value: 64 };
+			shader.uniforms.thicknessPower = { value: 16 };
+			shader.uniforms.thicknessScale = { value: 32 };
 
 			shader.fragmentShader = shader.fragmentShader.replace(
 				'void main() {',

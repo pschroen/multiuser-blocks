@@ -6,7 +6,7 @@ export class InstancedBall extends Group {
 	constructor() {
 		super();
 
-		this.intensity = 0.2;
+		// Lights
 		this.color = new Color(lightColor);
 		this.lights = [];
 
@@ -19,16 +19,14 @@ export class InstancedBall extends Group {
 
 		const geometry = new IcosahedronGeometry(this.radius, 3);
 
-		const material = new MeshPhongMaterial({
-			color: new Color().offsetHSL(0, 0, -0.65)
-		});
+		const material = new MeshPhongMaterial();
 
 		// Based on https://github.com/mrdoob/three.js/blob/dev/examples/jsm/shaders/SubsurfaceScatteringShader.js by daoshengmu
 
 		material.onBeforeCompile = shader => {
 			shader.uniforms.thicknessDistortion = { value: 0.1 };
 			shader.uniforms.thicknessAmbient = { value: 0 };
-			shader.uniforms.thicknessAttenuation = { value: 0.8 };
+			shader.uniforms.thicknessAttenuation = { value: 0.2 };
 			shader.uniforms.thicknessPower = { value: 2 };
 			shader.uniforms.thicknessScale = { value: 16 };
 
@@ -83,13 +81,13 @@ export class InstancedBall extends Group {
 					vec3 lVector = (viewMatrix * vec4(vLightPosition, 1.0)).xyz - geometryPosition;
 					light.direction = normalize(lVector);
 					float lightDistance = length(lVector);
-					light.color = vColor * ${(this.intensity * Math.PI).toFixed(2)};
+					light.color = mix(vColor, vec3(0.5), 0.94);
 					light.color *= getDistanceAttenuation(lightDistance, 0.0, 0.0);
 					light.visible = (light.color != vec3(0.0));
 				}
 
 				void RE_Direct_Scattering(IncidentLight directLight, vec3 geometryPosition, vec3 geometryNormal, vec3 geometryViewDir, vec3 geometryClearcoatNormal, inout ReflectedLight reflectedLight) {
-					vec3 thickness = directLight.color * vInstanceVisibility;
+					vec3 thickness = directLight.color * 0.8 * vInstanceVisibility;
 					vec3 scatteringHalf = normalize(directLight.direction + (geometryNormal * thicknessDistortion));
 					float scatteringDot = pow(saturate(dot(geometryViewDir, -scatteringHalf)), thicknessPower) * thicknessScale;
 					vec3 scatteringIllu = (scatteringDot + thicknessAmbient) * thickness;
@@ -114,7 +112,7 @@ export class InstancedBall extends Group {
 			shader.fragmentShader = shader.fragmentShader.replace(
 				'vec3 totalEmissiveRadiance = emissive;',
 				/* glsl */ `
-				vec3 totalEmissiveRadiance = vColor * 0.32; // 0.8 * 0.4
+				vec3 totalEmissiveRadiance = vColor * 0.3;
 				`
 			);
 
@@ -147,7 +145,7 @@ export class InstancedBall extends Group {
 			instanceVisibilities.push(0);
 
 			// Not used by the ball shader itself but for lighting the blocks
-			const light = new PointLight(lightColor, this.intensity);
+			const light = new PointLight(lightColor, 1, 4.4, 0);
 			light.visible = false;
 			this.add(light);
 

@@ -16,7 +16,7 @@ export class AwwwardsBall extends Group {
 	}
 
 	initLight() {
-		const light = new PointLight(lightColor, 0.135);
+		const light = new PointLight(lightColor, 1, 1, 0);
 		this.add(light);
 	}
 
@@ -24,17 +24,17 @@ export class AwwwardsBall extends Group {
 		const geometry = new IcosahedronGeometry(this.radius, 3);
 
 		const material = new MeshPhongMaterial({
-			color: new Color(lightColor).offsetHSL(0, 0, -0.65),
-			emissive: new Color(lightColor),
-			emissiveIntensity: 0.32
+			color: new Color(lightColor).offsetHSL(0, -0.1, -0.5),
+			emissive: new Color(lightColor).offsetHSL(0, -0.1, 0),
+			emissiveIntensity: 0.4
 		});
 
 		// Based on https://github.com/mrdoob/three.js/blob/dev/examples/jsm/shaders/SubsurfaceScatteringShader.js by daoshengmu
 
 		material.onBeforeCompile = shader => {
 			shader.uniforms.thicknessDistortion = { value: 0.1 };
-			shader.uniforms.thicknessAmbient = { value: 0.2 };
-			shader.uniforms.thicknessAttenuation = { value: 0.8 };
+			shader.uniforms.thicknessAmbient = { value: 0 };
+			shader.uniforms.thicknessAttenuation = { value: 0.3 };
 			shader.uniforms.thicknessPower = { value: 2 };
 			shader.uniforms.thicknessScale = { value: 16 };
 

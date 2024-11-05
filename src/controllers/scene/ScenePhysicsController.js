@@ -1,5 +1,5 @@
 import { Color, Vector2, Vector3 } from 'three';
-import { Reticle, Stage, Thread, clamp, delayedCall, mapLinear, tween } from '@alienkitty/space.js/three';
+import { Reticle, Stage, Thread, clamp, delayedCall, tween } from '@alienkitty/space.js/three';
 import { Wobble } from '@alienkitty/alien.js/three';
 import { OimoPhysicsController } from '@alienkitty/alien.js/three/oimophysics';
 
@@ -348,7 +348,7 @@ export class ScenePhysicsController extends OimoPhysicsController {
 										}
 									}
 
-									visibility = isMove ? isDown ? 1.5 : 0.8 : 0;
+									visibility = isMove ? isDown ? 1.4 : 1 : 0;
 								} else {
 									if (!this.progress) {
 										this.wobble.update(time);
@@ -362,7 +362,7 @@ export class ScenePhysicsController extends OimoPhysicsController {
 										this.object.position.copy(this.point);
 									}
 
-									visibility = isDown ? 1.5 : 0.8;
+									visibility = isDown ? 1.4 : 1;
 								}
 							} else {
 								visibility = 0;
@@ -375,13 +375,13 @@ export class ScenePhysicsController extends OimoPhysicsController {
 								strength = 0;
 							}
 
-							this.object.scale.setScalar(clamp(mapLinear(strength, 0, 0.8, 0, 1), 0, 1));
+							this.object.scale.setScalar(clamp(strength, 0, 1));
 
 							object.geometry.attributes.instanceVisibility.array[j] = strength;
 							object.geometry.attributes.instanceVisibility.needsUpdate = true;
 
 							this.view.ball.lights[j].position.copy(this.object.position);
-							this.view.ball.lights[j].intensity = strength * this.view.ball.intensity;
+							this.view.ball.lights[j].intensity = strength;
 							this.view.ball.lights[j].visible = !!strength;
 						} else {
 							this.object.scale.setScalar(j >= 30 ? 0.5 : 1);

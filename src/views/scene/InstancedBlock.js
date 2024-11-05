@@ -54,7 +54,7 @@ export class InstancedBlock extends Group {
 
 		const material = new MeshStandardMaterial({
 			color: new Color().offsetHSL(0, 0, -0.65),
-			metalness: 0.6,
+			metalness: 0.7,
 			roughness: 2,
 			map,
 			metalnessMap: ormMap,
@@ -76,9 +76,9 @@ export class InstancedBlock extends Group {
 			shader.uniforms.thicknessMap = { value: thicknessMap };
 			shader.uniforms.thicknessDistortion = { value: 0 };
 			shader.uniforms.thicknessAmbient = { value: 0 };
-			shader.uniforms.thicknessAttenuation = { value: 1 };
-			shader.uniforms.thicknessPower = { value: 16 };
-			shader.uniforms.thicknessScale = { value: 64 };
+			shader.uniforms.thicknessAttenuation = { value: 0.5 };
+			shader.uniforms.thicknessPower = { value: 8 };
+			shader.uniforms.thicknessScale = { value: 32 };
 
 			shader.vertexShader = shader.vertexShader.replace(
 				'#include <common>',

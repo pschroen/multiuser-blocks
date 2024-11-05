@@ -17,7 +17,7 @@ export class BallView extends Group {
 		this.height = size;
 
 		this.initRenderer();
-		this.initLights();
+		// this.initLights(); // Scene lights not needed
 		this.initMesh();
 		this.initViews();
 	}
@@ -47,7 +47,7 @@ export class BallView extends Group {
 	initLights() {
 		this.scene.add(new AmbientLight(0xffffff, 0.2));
 
-		const light = new DirectionalLight(0xffffff, 0.4);
+		const light = new DirectionalLight(0xffffff, 2);
 		light.position.set(5, 5, 5);
 		this.scene.add(light);
 	}

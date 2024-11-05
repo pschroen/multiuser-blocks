@@ -39,8 +39,7 @@ export class InputManager {
 
 		this.material = new MeshBasicMaterial({
 			color: new Color(Stage.rootStyle.getPropertyValue('--bg-color').trim()),
-			transparent: true,
-			toneMapped: false
+			transparent: true
 		});
 
 		this.plane = new Mesh(quad, new MeshBasicMaterial({ visible: false }));
