@@ -70,7 +70,7 @@ export class AudioController {
 				gong.updateMatrixWorld();
 
 				const strength = clamp(mapLinear(force, 0, 4, 0, 1), 0, 1);
-				gong.sound.gain.set(strength * 0.7);
+				gong.sound.gain.set(strength * 0.8);
 				gong.sound.playbackRate.set(clamp(0.8 + strength * 0.4, 0.8, 1.2));
 				gong.sound.play();
 
