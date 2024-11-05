@@ -83,7 +83,7 @@ export class AudioController {
 				WebAudio.play('cymbal', 0.05).gain.fade(0, 2000);
 				break;
 			case 'blocks_start':
-				WebAudio.fadeInAndPlay('nebulous_loop', 0.02, true, 2000, 'linear');
+				WebAudio.fadeInAndPlay('nebulous_loop', 0.05, true, 2000, 'linear');
 				break;
 			case 'about_section':
 				tween(WebAudio.gain, { value: 0.3 }, 1000, 'easeOutSine');
