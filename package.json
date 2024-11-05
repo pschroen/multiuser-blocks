@@ -32,7 +32,7 @@
     "@alienkitty/space.js": "alienkitty/space.js#dev",
     "express": "latest",
     "express-ws": "latest",
-    "oimophysics": "saharan/OimoPhysics",
+    "oimophysics": "saharan/OimoPhysics#v1.2.3",
     "three": "latest"
   },
   "devDependencies": {
