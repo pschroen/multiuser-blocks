@@ -1,4 +1,3 @@
-import { ACESFilmicToneMapping, CineonToneMapping, LinearToneMapping, NoToneMapping, ReinhardToneMapping } from 'three';
 import { PanelItem, Stage, brightness } from '@alienkitty/space.js/three';
 
 import { RenderManager } from '../world/RenderManager.js';
@@ -21,15 +20,6 @@ export class PanelController {
 
 	static initPanel() {
 		const { luminosityMaterial, bloomCompositeMaterial, compositeMaterial, dirtMaterial } = RenderManager;
-
-		// https://threejs.org/examples/#webgl_tonemapping
-		const toneMappingOptions = {
-			None: NoToneMapping,
-			Linear: LinearToneMapping,
-			Reinhard: ReinhardToneMapping,
-			Cineon: CineonToneMapping,
-			ACESFilmic: ACESFilmicToneMapping
-		};
 
 		const dirtOptions = {
 			Off: false,
@@ -57,39 +47,6 @@ export class PanelController {
 					Stage.root.style.setProperty('--bg-color', `#${value.getHexString()}`);
 
 					this.setInvert(value);
-				}
-			},
-			{
-				type: 'divider'
-			},
-			{
-				type: 'list',
-				list: toneMappingOptions,
-				value: 'ACESFilmic',
-				callback: value => {
-					this.renderer.toneMapping = toneMappingOptions[value];
-
-					this.scene.traverse(object => {
-						if (object.isMesh) {
-							object.material.needsUpdate = true;
-						}
-					});
-
-					this.display.ball.update();
-				}
-			},
-			{
-				type: 'slider',
-				name: 'Exp',
-				min: 0,
-				max: 2,
-				step: 0.01,
-				precision: 2,
-				value: this.renderer.toneMappingExposure,
-				callback: value => {
-					this.renderer.toneMappingExposure = value;
-
-					this.display.ball.update();
 				}
 			},
 			{

@@ -1,4 +1,4 @@
-import { ACESFilmicToneMapping, AmbientLight, BasicShadowMap, Color, ColorManagement, DirectionalLight, HemisphereLight, LinearSRGBColorSpace, OrthographicCamera, PerspectiveCamera, PlaneGeometry, Scene, Vector2, WebGLRenderer } from 'three';
+import { AmbientLight, BasicShadowMap, Color, ColorManagement, DirectionalLight, HemisphereLight, LinearSRGBColorSpace, OrthographicCamera, PerspectiveCamera, PlaneGeometry, Scene, Vector2, WebGLRenderer } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { BufferGeometryLoader, EnvironmentTextureLoader, Stage, TextureLoader, getFullscreenTriangle } from '@alienkitty/space.js/three';
 
@@ -26,10 +26,6 @@ export class WorldController {
 		// Disable color management
 		ColorManagement.enabled = false;
 		this.renderer.outputColorSpace = LinearSRGBColorSpace;
-
-		// Tone mapping
-		this.renderer.toneMapping = ACESFilmicToneMapping;
-		this.renderer.toneMappingExposure = 1;
 
 		// Shadows
 		this.renderer.shadowMap.enabled = true;
