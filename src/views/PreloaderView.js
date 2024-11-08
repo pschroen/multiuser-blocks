@@ -191,9 +191,15 @@ export class PreloaderView extends Interface {
 		const style = formatColor(value);
 
 		this.timeout = delayedCall(200, () => {
-			this.colorPicker.setValue(style || lightColor, false);
+			if (style) {
+				this.colorPicker.setValue(style, false);
 
-			store.color = this.colorPicker.value.getHexString();
+				store.color = this.colorPicker.value.getHexString();
+			} else {
+				this.colorPicker.setValue(lightColor, false);
+
+				store.color = '';
+			}
 
 			Stage.events.emit('color', { value: store.color });
 		});

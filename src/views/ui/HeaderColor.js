@@ -113,10 +113,17 @@ export class HeaderColor extends Interface {
 		const style = formatColor(value);
 
 		this.timeout = delayedCall(200, () => {
-			this.colorPicker.setValue(style || lightColor, false);
-			this.display.ball.setColor(this.colorPicker.value);
+			if (style) {
+				this.colorPicker.setValue(style, false);
 
-			store.color = this.colorPicker.value.getHexString();
+				store.color = this.colorPicker.value.getHexString();
+			} else {
+				this.colorPicker.setValue(lightColor, false);
+
+				store.color = '';
+			}
+
+			this.display.ball.setColor(this.colorPicker.value);
 
 			Stage.events.emit('color', { value: store.color });
 		});
