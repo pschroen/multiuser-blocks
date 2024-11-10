@@ -5,13 +5,15 @@
  */
 
 import express from 'express';
-const app = express();
-
 import enableWs from 'express-ws';
-const expressWs = enableWs(app);
-expressWs.getWss('/');
+
+import { numPointers } from './src/config/Config.js';
 
 const interval = 4000; // 4 second heartbeat
+
+const app = express();
+const expressWs = enableWs(app);
+expressWs.getWss('/');
 
 app.use(express.static('public'));
 
@@ -87,10 +89,12 @@ function add(ws, request) {
 
 			room[i] = ws;
 
-			const mouse = `mouse_${ws._id}`;
-			const position = [0, 0, 0];
+			if (ws._id < numPointers) {
+				const mouse = `mouse_${ws._id}`;
+				const position = [0, 0, 0];
 
-			physics.setPosition(mouse, position);
+				physics.setPosition(mouse, position);
+			}
 
 			console.log('REMOTE:', ws._remoteAddress, request.headers['user-agent']);
 
@@ -162,57 +166,62 @@ app.ws('/', (ws, request) => {
 	ws.on('message', data => {
 		ws._idle = 0;
 
-		data.writeUInt8(ws._id, 1);
-
 		switch (data.readUInt8(0)) {
 			case 1:
 				// console.log('HEARTBEAT:', data);
 				ws._latency = Math.min(65535, Date.now() - Number(data.readBigUInt64BE(2))); // Clamp to 65535
 				break;
-			case 4:
-				// console.log('COLOR:', data);
-				ws._color = Buffer.from(data.subarray(2), 'utf-8').toString();
-				users(ws);
-				break;
-			case 5: {
-				const index = data.readUInt8(2);
-				const body = shapes[index].name;
-				const mouse = `mouse_${ws._id}`;
-				const mouseJoint = `mouseJoint_${ws._id}`;
-				const position = [data.readFloatBE(3), data.readFloatBE(7), data.readFloatBE(11)];
-				// console.log('PICK:', data, data.readUInt8(2), position);
-
-				physics.setPosition(mouse, position);
-
-				if (physics.get(mouseJoint)) {
-					physics.remove(mouseJoint);
+			case 4: {
+				if (ws._id < numPointers) {
+					// console.log('COLOR:', data);
+					ws._color = Buffer.from(data.subarray(2), 'utf-8').toString();
+					users(ws);
 				}
+				break;
+			}
+			case 5: {
+				if (ws._id < numPointers) {
+					const index = data.readUInt8(2);
+					const body = shapes[index].name;
+					const mouse = `mouse_${ws._id}`;
+					const mouseJoint = `mouseJoint_${ws._id}`;
+					const position = [data.readFloatBE(3), data.readFloatBE(7), data.readFloatBE(11)];
+					// console.log('PICK:', data, data.readUInt8(2), position);
 
-				physics.add({
-					name: mouseJoint,
-					type: 'joint',
-					mode: 'spherical',
-					body1: body,
-					body2: mouse,
-					worldAnchor: index === 6 || index === 7 || physics.get(body).getNumJointLinks() ? position : null,
-					springDamper: [4, 1]
-					// springDamper: [2, 0.5] // elastic
-				});
+					physics.setPosition(mouse, position);
+
+					if (physics.get(mouseJoint)) {
+						physics.remove(mouseJoint);
+					}
+
+					physics.add({
+						name: mouseJoint,
+						type: 'joint',
+						mode: 'spherical',
+						body1: body,
+						body2: mouse,
+						worldAnchor: index === 6 || index === 7 || physics.get(body).getNumJointLinks() ? position : null,
+						springDamper: [4, 1]
+						// springDamper: [2, 0.5] // elastic
+					});
+				}
 				break;
 			}
 			case 6: {
-				const mouse = `mouse_${ws._id}`;
-				const mouseJoint = `mouseJoint_${ws._id}`;
-				const position = [data.readFloatBE(3), data.readFloatBE(7), data.readFloatBE(11)];
-				// console.log('MOTION:', data, data.readUInt8(2), position);
+				if (ws._id < numPointers) {
+					const mouse = `mouse_${ws._id}`;
+					const mouseJoint = `mouseJoint_${ws._id}`;
+					const position = [data.readFloatBE(3), data.readFloatBE(7), data.readFloatBE(11)];
+					// console.log('MOTION:', data, data.readUInt8(2), position);
 
-				ws._isMove = true;
-				ws._isDown = !!data.readUInt8(2);
+					ws._isMove = true;
+					ws._isDown = !!data.readUInt8(2);
 
-				physics.setPosition(mouse, position);
+					physics.setPosition(mouse, position);
 
-				if (!ws._isDown && physics.get(mouseJoint)) {
-					physics.remove(mouseJoint);
+					if (!ws._isDown && physics.get(mouseJoint)) {
+						physics.remove(mouseJoint);
+					}
 				}
 				break;
 			}
@@ -476,7 +485,7 @@ function onUpdate() {
 
 	let index;
 
-	for (let i = 0, l = clients.length; i < l; i++) {
+	for (let i = 0, l = clients.length; i < l && i < numPointers; i++) {
 		const client = clients[i];
 
 		index = startIndex + byteLength * client._id;

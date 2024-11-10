@@ -174,7 +174,7 @@ export class ScenePhysicsController extends OimoPhysicsController {
 				return;
 			}
 
-			if (!this.pointer[id] && Object.keys(this.pointer).length - 1 < numPointers) {
+			if (!this.pointer[id] && Object.keys(this.pointer).length < numPointers) {
 				this.pointer[id] = {};
 				this.pointer[id].needsUpdate = false;
 				this.pointer[id].color = new Color();
