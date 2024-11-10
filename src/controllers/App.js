@@ -76,6 +76,9 @@ export class App {
 		this.ui = new UI({
 			fps: true,
 			breakpoint,
+			info: {
+				content: 'Observer'
+			},
 			details: {
 				background: true,
 				title: 'Multiuser Blocks'.replace(/[\s.]+/g, '_'),

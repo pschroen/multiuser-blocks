@@ -18,7 +18,7 @@ export class ScenePhysicsController extends OimoPhysicsController {
 		this.camera = camera;
 		this.view = view;
 		this.trackers = trackers;
-		this.header = ui.header;
+		this.ui = ui;
 
 		this.id = null;
 		this.array = null;
@@ -135,7 +135,7 @@ export class ScenePhysicsController extends OimoPhysicsController {
 	// Event handlers
 
 	onColor = ({ value }) => {
-		if (!this.id) {
+		if (!this.id || !this.pointer[this.id]) {
 			return;
 		}
 
@@ -196,7 +196,6 @@ export class ScenePhysicsController extends OimoPhysicsController {
 		// Update and prune
 		Object.keys(this.pointer).forEach(id => {
 			if (id === this.id) {
-				this.header.color.setData(Data.getUser(id));
 				return;
 			}
 
@@ -236,19 +235,25 @@ export class ScenePhysicsController extends OimoPhysicsController {
 			this.connected = true;
 			this.id = id;
 
-			this.pointer[id] = {};
-			this.pointer[id].needsUpdate = false;
-			this.pointer[id].color = new Color();
-			this.pointer[id].last = new Color();
-			this.pointer[id].target = new Color();
-			this.pointer[id].target.set(lightColor);
-			this.pointer[id].color.copy(this.pointer[id].target);
-			this.pointer[id].last.copy(this.pointer[id].color);
+			if (id < numPointers) {
+				this.pointer[id] = {};
+				this.pointer[id].needsUpdate = false;
+				this.pointer[id].color = new Color();
+				this.pointer[id].last = new Color();
+				this.pointer[id].target = new Color();
+				this.pointer[id].target.set(lightColor);
+				this.pointer[id].color.copy(this.pointer[id].target);
+				this.pointer[id].last.copy(this.pointer[id].color);
+			} else {
+				this.ui.info.animateIn();
+			}
 
 			this.onColor({ value: store.color });
 
 			this.resolve();
 		}
+
+		this.ui.header.color.setData(Data.getUser(id));
 	};
 
 	onBuffer = ({ array }) => {

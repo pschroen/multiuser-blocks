@@ -42,6 +42,12 @@
 	--ui-link-font-size: 11px;
 	--ui-link-line-height: 18px;
 	--ui-link-letter-spacing: 0.03em;
+	--ui-info-font-family: 'Gothic A1', sans-serif;
+	--ui-info-font-weight: 700;
+	--ui-info-font-size: 10px;
+	--ui-info-line-height: 20px;
+	--ui-info-letter-spacing: 0.08em;
+	--ui-info-opacity: 0.7;
 	--ui-color: rgb(255 255 255 / 0.94);
 	--ui-color-triplet: 255 255 255;
 	--ui-color-line-opacity: 0.5;
@@ -153,6 +159,17 @@ a {
 
 .ui {
 	z-index: 9;
+
+	> .info {
+		padding: 6px;
+		font-family: var(--ui-info-font-family);
+		font-weight: var(--ui-info-font-weight);
+		font-size: var(--ui-info-font-size);
+		line-height: var(--ui-info-line-height);
+		letter-spacing: var(--ui-info-letter-spacing);
+		-moz-osx-font-smoothing: grayscale;
+		-webkit-font-smoothing: antialiased;
+	}
 }
 
 .trackers {
