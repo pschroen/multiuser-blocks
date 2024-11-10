@@ -411,7 +411,7 @@ class Block {
 	// Event handlers
 
 	onContact = (body, name) => {
-		if (this.contact) {
+		if (this.contact || elapsed < 1000) {
 			return;
 		}
 
@@ -455,11 +455,17 @@ const timestep = 1000 / 61;
 const byteLength = 8 * 4;
 const startIndex = 1 + 63 * byteLength;
 
+let time = 0;
 let startTime = 0;
+let delta = 0;
+let elapsed = 0;
 let timeout = null;
 
 function onUpdate() {
-	startTime = performance.now();
+	time = performance.now();
+	delta = Math.min(150, time - startTime); // Clamp delta
+	startTime = time;
+	elapsed += delta;
 
 	physics.step();
 
