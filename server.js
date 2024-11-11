@@ -7,8 +7,6 @@
 import express from 'express';
 import enableWs from 'express-ws';
 
-import { numPointers } from './src/config/Config.js';
-
 const interval = 4000; // 4 second heartbeat
 
 const app = express();
@@ -16,6 +14,18 @@ const expressWs = enableWs(app);
 expressWs.getWss('/');
 
 app.use(express.static('public'));
+
+//
+
+import { ObjectPool } from '@alienkitty/space.js/three';
+
+import { numPointers } from './src/config/Config.js';
+
+const mousePool = new ObjectPool();
+
+for (let i = 0; i < numPointers; i++) {
+	mousePool.put(i);
+}
 
 //
 
@@ -81,6 +91,7 @@ function add(ws, request) {
 
 			ws._id = i;
 			ws._idle = Date.now();
+			ws._mouse = mousePool.get();
 			ws._isMove = false;
 			ws._isDown = false;
 			ws._color = '';
@@ -89,8 +100,8 @@ function add(ws, request) {
 
 			room[i] = ws;
 
-			if (ws._id < numPointers) {
-				const mouse = `mouse_${ws._id}`;
+			if (ws._mouse !== null) {
+				const mouse = `mouse_${ws._mouse}`;
 				const position = [0, 0, 0];
 
 				physics.setPosition(mouse, position);
@@ -104,7 +115,7 @@ function add(ws, request) {
 }
 
 function remove(ws) {
-	const mouseJoint = `mouseJoint_${ws._id}`;
+	const mouseJoint = `mouseJoint_${ws._mouse}`;
 
 	if (physics.get(mouseJoint)) {
 		physics.remove(mouseJoint);
@@ -120,6 +131,10 @@ function remove(ws) {
 
 	if (~index) {
 		room[index] = undefined;
+	}
+
+	if (ws._mouse !== null) {
+		mousePool.put(ws._mouse);
 	}
 }
 
@@ -172,7 +187,7 @@ app.ws('/', (ws, request) => {
 				ws._latency = Math.min(65535, Date.now() - Number(data.readBigUInt64BE(2))); // Clamp to 65535
 				break;
 			case 4: {
-				if (ws._id < numPointers) {
+				if (ws._mouse !== null) {
 					// console.log('COLOR:', data);
 					ws._color = Buffer.from(data.subarray(2), 'utf-8').toString();
 					users(ws);
@@ -180,11 +195,11 @@ app.ws('/', (ws, request) => {
 				break;
 			}
 			case 5: {
-				if (ws._id < numPointers) {
+				if (ws._mouse !== null) {
 					const index = data.readUInt8(2);
 					const body = shapes[index].name;
-					const mouse = `mouse_${ws._id}`;
-					const mouseJoint = `mouseJoint_${ws._id}`;
+					const mouse = `mouse_${ws._mouse}`;
+					const mouseJoint = `mouseJoint_${ws._mouse}`;
 					const position = [data.readFloatBE(3), data.readFloatBE(7), data.readFloatBE(11)];
 					// console.log('PICK:', data, data.readUInt8(2), position);
 
@@ -208,9 +223,9 @@ app.ws('/', (ws, request) => {
 				break;
 			}
 			case 6: {
-				if (ws._id < numPointers) {
-					const mouse = `mouse_${ws._id}`;
-					const mouseJoint = `mouseJoint_${ws._id}`;
+				if (ws._mouse !== null) {
+					const mouse = `mouse_${ws._mouse}`;
+					const mouseJoint = `mouseJoint_${ws._mouse}`;
 					const position = [data.readFloatBE(3), data.readFloatBE(7), data.readFloatBE(11)];
 					// console.log('MOTION:', data, data.readUInt8(2), position);
 
@@ -485,12 +500,14 @@ function onUpdate() {
 
 	let index;
 
-	for (let i = 0, l = clients.length; i < l && i < numPointers; i++) {
+	for (let i = 0, l = clients.length; i < l; i++) {
 		const client = clients[i];
 
-		index = startIndex + byteLength * client._id;
+		if (client._mouse !== null) {
+			index = startIndex + byteLength * client._mouse;
 
-		data.writeFloatLE(client._isMove ? client._isDown ? 2 : 1 : 0, index + 28); // 7 * 4
+			data.writeFloatLE(client._isMove ? client._isDown ? 2 : 1 : 0, index + 28); // 7 * 4
+		}
 	}
 
 	broadcast(null, data);
