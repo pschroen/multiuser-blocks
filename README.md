@@ -4,6 +4,12 @@ A follow-up experiment to Multiuser Fluid. Multiuser Blocks is an experiment to 
 
 [https://multiuser-blocks.glitch.me/](https://multiuser-blocks.glitch.me/)
 
+## 2024 updates
+
+Fixes and updates, additional UI elements, support for more connections, and an observer mode.
+
+[https://multiuser-blocks.glitch.me/?observer&orbit](https://multiuser-blocks.glitch.me/?observer&orbit)
+
 #### Dev notes
 
 This is a remix of Multiuser Fluid  
@@ -21,17 +27,11 @@ OimoPhysics
 #### Roadmap
 
 ~~Implement compound shapes~~  
-Glitch performance tuning  
-Additional UI elements  
-Support more connections  
-
-#### See also
-
-UIL  
-[https://github.com/lo-th/uil](https://github.com/lo-th/uil)
-
-Phy  
-[https://github.com/lo-th/phy](https://github.com/lo-th/phy)
+~~Glitch performance tuning~~  
+~~Additional UI elements~~  
+~~Support more connections~~  
+~~Observer mode~~  
+Clustered lighting  
 
 <br>
 
