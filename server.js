@@ -91,7 +91,7 @@ function add(ws, request) {
 
 			ws._id = i;
 			ws._idle = Date.now();
-			ws._mouse = mousePool.get();
+			ws._mouse = request.query.observer !== undefined ? null : mousePool.get();
 			ws._isMove = false;
 			ws._isDown = false;
 			ws._color = '';

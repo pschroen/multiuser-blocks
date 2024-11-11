@@ -105,7 +105,7 @@ export class ScenePhysicsController extends OimoPhysicsController {
 	initSocket() {
 		const port = Number(location.port) > 1000 ? `:${location.port}` : '';
 		const protocol = location.protocol.replace('http', 'ws');
-		const server = `${protocol}//${location.hostname}${port}`;
+		const server = `${protocol}//${location.hostname}${port}/${location.search}`;
 		// const server = 'wss://multiuser-blocks.glitch.me';
 
 		this.thread = new Thread({
@@ -246,6 +246,8 @@ export class ScenePhysicsController extends OimoPhysicsController {
 				this.pointer[id].color.copy(this.pointer[id].target);
 				this.pointer[id].last.copy(this.pointer[id].color);
 			} else {
+				Stage.events.emit('observer');
+
 				this.ui.info.animateIn();
 			}
 

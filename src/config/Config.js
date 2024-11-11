@@ -3,10 +3,12 @@ export const isTablet = isMobile && Math.max(window.innerWidth, window.innerHeig
 export const isPhone = isMobile && !isTablet;
 export const isHighQuality = navigator.hardwareConcurrency > 4 || (!navigator.hardwareConcurrency && !isTablet);
 
+export var isObserver;
 export var isOrbit;
 export var isDebug;
 
 if (typeof window !== 'undefined') {
+	isObserver = /[?&]observer/.test(location.search);
 	isOrbit = /[?&]orbit/.test(location.search);
 	isDebug = /[?&]debug/.test(location.search);
 }
