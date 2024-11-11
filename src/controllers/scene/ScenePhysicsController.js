@@ -174,7 +174,9 @@ export class ScenePhysicsController extends OimoPhysicsController {
 				return;
 			}
 
-			if (!this.pointer[id] && Object.keys(this.pointer).length < numPointers) {
+			const i = Number(id);
+
+			if (i !== numPointers && !this.pointer[id]) {
 				this.pointer[id] = {};
 				this.pointer[id].needsUpdate = false;
 				this.pointer[id].color = new Color();
@@ -185,7 +187,6 @@ export class ScenePhysicsController extends OimoPhysicsController {
 				this.pointer[id].last.copy(this.pointer[id].color);
 				this.pointer[id].tracker = this.trackers.add(new Reticle());
 
-				const i = Number(id);
 				this.view.ball.color.copy(this.pointer[id].color);
 				this.view.ball.lights[i].color.copy(this.pointer[id].color);
 				this.view.ball.mesh.setColorAt(i, this.view.ball.color);
@@ -235,7 +236,7 @@ export class ScenePhysicsController extends OimoPhysicsController {
 			this.connected = true;
 			this.id = id;
 
-			if (id < numPointers) {
+			if (Number(id) !== numPointers) {
 				this.pointer[id] = {};
 				this.pointer[id].needsUpdate = false;
 				this.pointer[id].color = new Color();

@@ -55,7 +55,7 @@ function getUsers() {
 	for (let i = 0; i < length; i++) {
 		const client = clients[i];
 
-		data.writeUInt8(client._id, index);
+		data.writeUInt8(client._mouse === null ? numPointers : client._mouse, index);
 
 		const buf = Buffer.from(client._color, 'utf8');
 
@@ -249,7 +249,7 @@ app.ws('/', (ws, request) => {
 		if (ws.readyState === ws.OPEN) {
 			const data = Buffer.allocUnsafe(10);
 			data.writeUInt8(1, 0);
-			data.writeUInt8(ws._id, 1);
+			data.writeUInt8(ws._mouse === null ? numPointers : ws._mouse, 1);
 			data.writeBigUInt64BE(BigInt(Date.now()), 2);
 
 			ws.send(data);
