@@ -100,13 +100,6 @@ function add(ws, request) {
 
 			room[i] = ws;
 
-			if (ws._mouse !== null) {
-				const mouse = `mouse_${ws._mouse}`;
-				const position = [0, 0, 0];
-
-				physics.setPosition(mouse, position);
-			}
-
 			console.log('REMOTE:', ws._remoteAddress, request.headers['user-agent']);
 
 			return;
@@ -498,6 +491,7 @@ function onUpdate() {
 
 	Buffer.from(physics.array.buffer).copy(data, 1);
 
+	// Overwrite sleeping index with isMove and isDown state
 	let index;
 
 	for (let i = 0, l = clients.length; i < l; i++) {
@@ -506,10 +500,14 @@ function onUpdate() {
 		if (client._mouse !== null) {
 			index = startIndex + byteLength * client._mouse;
 
-			data.writeFloatLE(client._isMove ? client._isDown ? 2 : 1 : 0, index + 28); // 7 * float32 for sleeping index
+			data.writeFloatLE(
+				client._isMove ? client._isDown ? 2 : 1 : 0,
+				index + 28 // 7 * float32 for sleeping index
+			);
 		}
 	}
 
+	// console.log('BUFFER:', data);
 	broadcast(null, data);
 
 	if (timeout !== null) {

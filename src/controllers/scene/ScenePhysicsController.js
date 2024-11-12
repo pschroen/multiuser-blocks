@@ -298,6 +298,7 @@ export class ScenePhysicsController extends OimoPhysicsController {
 		this.wobble.origin.copy(this.position);
 	};
 
+	// step(array) not used
 	update = time => {
 		if (!this.enabled) {
 			return;
