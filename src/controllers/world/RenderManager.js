@@ -1,6 +1,6 @@
 import { MathUtils, Mesh, OrthographicCamera, Vector2, WebGLRenderTarget } from 'three';
 import { tween } from '@alienkitty/space.js/three';
-import { BloomCompositeMaterial, FXAAMaterial, LuminosityMaterial, UnrealBloomBlurMaterial } from '@alienkitty/alien.js/three';
+import { BloomCompositeMaterial, FXAAMaterial, LuminosityMaterial, SMAABlendMaterial, SMAAEdgesMaterial, SMAAWeightsMaterial, UnrealBloomBlurMaterial } from '@alienkitty/alien.js/three';
 
 import { WorldController } from './WorldController.js';
 import { CompositeMaterial } from '../../materials/CompositeMaterial.js';
@@ -36,7 +36,7 @@ export class RenderManager {
 	}
 
 	static initRenderer() {
-		const { screenTriangle, resolution } = WorldController;
+		const { screenTriangle, resolution, texelSize, textureLoader } = WorldController;
 
 		// Manually clear
 		this.renderer.autoClear = false;
@@ -62,6 +62,8 @@ export class RenderManager {
 			this.nMips = 5;
 
 			this.renderTargetBright = this.renderTargetA.clone();
+			this.renderTargetEdges = this.renderTargetA.clone();
+			this.renderTargetWeights = this.renderTargetA.clone();
 
 			for (let i = 0, l = this.nMips; i < l; i++) {
 				this.renderTargetsHorizontal.push(this.renderTargetA.clone());
@@ -69,10 +71,6 @@ export class RenderManager {
 			}
 
 			this.renderTargetA.depthBuffer = true;
-
-			// FXAA material
-			this.fxaaMaterial = new FXAAMaterial();
-			this.fxaaMaterial.uniforms.uResolution = resolution;
 
 			// Luminosity high pass material
 			this.luminosityMaterial = new LuminosityMaterial();
@@ -103,6 +101,19 @@ export class RenderManager {
 			this.compositeMaterial.uniforms.uGrainAmount.value = this.grainAmount;
 			this.compositeMaterial.uniforms.uBoost.value = this.boost;
 			this.compositeMaterial.uniforms.uReduction.value = this.reduction;
+
+			// SMAA edge detection material
+			this.edgesMaterial = new SMAAEdgesMaterial();
+			this.edgesMaterial.uniforms.uTexelSize = texelSize;
+
+			// SMAA weights material
+			this.weightsMaterial = new SMAAWeightsMaterial(textureLoader);
+			this.weightsMaterial.uniforms.uTexelSize = texelSize;
+
+			// SMAA material
+			this.smaaMaterial = new SMAABlendMaterial();
+			this.smaaMaterial.uniforms.tWeightMap.value = this.renderTargetWeights.texture;
+			this.smaaMaterial.uniforms.uTexelSize = texelSize;
 
 			// Dirt material
 			this.dirtMaterial = new DirtMaterial();
@@ -145,6 +156,8 @@ export class RenderManager {
 			height = MathUtils.floorPowerOfTwo(height) / 2;
 
 			this.renderTargetBright.setSize(width, height);
+			this.renderTargetEdges.setSize(width, height);
+			this.renderTargetWeights.setSize(width, height);
 
 			for (let i = 0, l = this.nMips; i < l; i++) {
 				this.renderTargetsHorizontal[i].setSize(width, height);
@@ -173,6 +186,8 @@ export class RenderManager {
 		if (isHighQuality) {
 			const renderTargetB = this.renderTargetB;
 			const renderTargetBright = this.renderTargetBright;
+			const renderTargetEdges = this.renderTargetEdges;
+			const renderTargetWeights = this.renderTargetWeights;
 			const renderTargetsHorizontal = this.renderTargetsHorizontal;
 			const renderTargetsVertical = this.renderTargetsVertical;
 
@@ -220,9 +235,23 @@ export class RenderManager {
 			// HUD scene
 			renderer.render(this.displayScene, this.displayCamera);
 
-			// FXAA pass (render to screen)
-			this.fxaaMaterial.uniforms.tMap.value = renderTargetB.texture;
-			this.screen.material = this.fxaaMaterial;
+			// SMAA edge detection pass
+			this.edgesMaterial.uniforms.tMap.value = renderTargetB.texture;
+			this.screen.material = this.edgesMaterial;
+			renderer.setRenderTarget(renderTargetEdges);
+			renderer.clear();
+			renderer.render(this.screen, this.screenCamera);
+
+			// SMAA weights pass
+			this.weightsMaterial.uniforms.tMap.value = renderTargetEdges.texture;
+			this.screen.material = this.weightsMaterial;
+			renderer.setRenderTarget(renderTargetWeights);
+			renderer.clear();
+			renderer.render(this.screen, this.screenCamera);
+
+			// SMAA pass (render to screen)
+			this.smaaMaterial.uniforms.tMap.value = renderTargetB.texture;
+			this.screen.material = this.smaaMaterial;
 			renderer.setRenderTarget(null);
 			renderer.clear();
 			renderer.render(this.screen, this.screenCamera);
