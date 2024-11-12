@@ -121,6 +121,7 @@ export class Socket extends EventEmitter {
 	color = text => {
 		const view = this.views[4];
 		view.setUint8(0, 4);
+		// view.setUint8(1, this.id); // Set server-side
 
 		const buf = this.encoder.encode(text);
 
@@ -134,6 +135,7 @@ export class Socket extends EventEmitter {
 	pick = ({ body, x, y, z }) => {
 		const view = this.views[5];
 		view.setUint8(0, 5);
+		// view.setUint8(1, this.id); // Set server-side
 		view.setUint8(2, body);
 		view.setFloat32(3, x);
 		view.setFloat32(7, y);
@@ -145,6 +147,7 @@ export class Socket extends EventEmitter {
 	motion = ({ isDown, x, y, z }) => {
 		const view = this.views[6];
 		view.setUint8(0, 6);
+		// view.setUint8(1, this.id); // Set server-side
 		view.setUint8(2, isDown ? 1 : 0);
 		view.setFloat32(3, x);
 		view.setFloat32(7, y);
