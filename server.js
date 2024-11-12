@@ -46,8 +46,8 @@ function getUsers() {
 	}
 
 	const length = clients.length;
-	const byteLength = 1 + 6 + 4 + 2;
-	const data = Buffer.allocUnsafe(1 + byteLength * length);
+	const byteLength = 1 + 6 + 4 + 2; // mouse + color + remoteAddress + latency
+	const data = Buffer.allocUnsafe(1 + byteLength * length); // event + size * users
 	data.writeUInt8(0, 0);
 
 	let index = 1;
@@ -476,8 +476,8 @@ for (let i = 0; i < 63; i++) {
 import { performance } from 'perf_hooks';
 
 const timestep = 1000 / 61;
-const byteLength = 8 * 4;
-const startIndex = 1 + 63 * byteLength;
+const byteLength = 8 * 4; // 8 * float32 for buffer size
+const startIndex = 1 + byteLength * 63; // event + size * blocks
 
 let time = 0;
 let startTime = 0;
@@ -493,7 +493,7 @@ function onUpdate() {
 
 	physics.step();
 
-	const data = Buffer.allocUnsafe(1 + physics.array.buffer.byteLength);
+	const data = Buffer.allocUnsafe(1 + physics.array.buffer.byteLength); // event + size
 	data.writeUInt8(2, 0);
 
 	Buffer.from(physics.array.buffer).copy(data, 1);
@@ -506,7 +506,7 @@ function onUpdate() {
 		if (client._mouse !== null) {
 			index = startIndex + byteLength * client._mouse;
 
-			data.writeFloatLE(client._isMove ? client._isDown ? 2 : 1 : 0, index + 28); // 7 * 4
+			data.writeFloatLE(client._isMove ? client._isDown ? 2 : 1 : 0, index + 28); // 7 * float32 for sleeping index
 		}
 	}
 
