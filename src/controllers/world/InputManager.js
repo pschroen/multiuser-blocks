@@ -4,7 +4,7 @@ import { Stage, tween } from '@alienkitty/space.js/three';
 import { WorldController } from './WorldController.js';
 import { SceneController } from '../scene/SceneController.js';
 
-import { isMobile, isObserver, layers } from '../../config/Config.js';
+import { isMobile, layers, store } from '../../config/Config.js';
 
 export class InputManager {
 	static init(scene, camera, view) {
@@ -30,8 +30,6 @@ export class InputManager {
 		this.position = new Vector3(0, 4.25, 2);
 
 		this.initMesh();
-
-		this.addListeners();
 	}
 
 	static initMesh() {
@@ -57,30 +55,16 @@ export class InputManager {
 	}
 
 	static addListeners() {
-		if (isObserver) {
+		if (store.observer) {
 			return;
 		}
 
-		Stage.events.on('observer', this.onObserver);
 		window.addEventListener('pointerdown', this.onPointerDown);
 		window.addEventListener('pointermove', this.onPointerMove);
 		window.addEventListener('pointerup', this.onPointerUp);
 	}
 
-	static removeListeners() {
-		Stage.events.off('observer', this.onObserver);
-		window.removeEventListener('pointerdown', this.onPointerDown);
-		window.removeEventListener('pointermove', this.onPointerMove);
-		window.removeEventListener('pointerup', this.onPointerUp);
-	}
-
 	// Event handlers
-
-	static onObserver = () => {
-		this.enabled = false;
-
-		this.removeListeners();
-	};
 
 	static onPointerDown = e => {
 		if (!this.enabled) {
@@ -244,9 +228,7 @@ export class InputManager {
 	};
 
 	static start = () => {
-		if (isObserver) {
-			return;
-		}
+		this.addListeners();
 
 		this.enabled = true;
 	};

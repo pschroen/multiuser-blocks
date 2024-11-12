@@ -236,6 +236,8 @@ export class ScenePhysicsController extends OimoPhysicsController {
 			this.connected = true;
 			this.id = id;
 
+			store.id = id;
+
 			if (Number(id) !== numPointers) {
 				this.pointer[id] = {};
 				this.pointer[id].needsUpdate = false;
@@ -246,7 +248,7 @@ export class ScenePhysicsController extends OimoPhysicsController {
 				this.pointer[id].color.copy(this.pointer[id].target);
 				this.pointer[id].last.copy(this.pointer[id].color);
 			} else {
-				Stage.events.emit('observer');
+				store.observer = true;
 
 				this.ui.info.animateIn();
 			}
