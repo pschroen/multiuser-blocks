@@ -125,6 +125,7 @@ export class Awwwards extends Group {
 		const mesh = new Mesh(this.geometry, this.material);
 		mesh.castShadow = true;
 		mesh.receiveShadow = true;
+		mesh.layers.enable(layers.buffers);
 		mesh.layers.enable(layers.picking);
 		this.add(mesh);
 

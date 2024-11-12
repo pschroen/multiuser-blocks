@@ -1,6 +1,6 @@
 import { Color, DynamicDrawUsage, Group, IcosahedronGeometry, InstancedBufferAttribute, InstancedMesh, Matrix4, MeshPhongMaterial, PointLight, ShaderChunk } from 'three';
 
-import { lightColor, numPointers } from '../../config/Config.js';
+import { layers, lightColor, numPointers } from '../../config/Config.js';
 
 export class InstancedBall extends Group {
 	constructor() {
@@ -132,6 +132,7 @@ export class InstancedBall extends Group {
 		mesh.instanceMatrix.setUsage(DynamicDrawUsage); // Will be updated every frame
 		mesh.castShadow = true;
 		mesh.receiveShadow = true;
+		mesh.layers.enable(layers.buffers);
 		this.add(mesh);
 
 		const matrix = new Matrix4();

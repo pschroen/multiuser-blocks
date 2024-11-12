@@ -138,6 +138,7 @@ export class InstancedBlock extends Group {
 		mesh.instanceMatrix.setUsage(DynamicDrawUsage); // Will be updated every frame
 		mesh.castShadow = true;
 		mesh.receiveShadow = true;
+		mesh.layers.enable(layers.buffers);
 		mesh.layers.enable(layers.picking);
 		this.add(mesh);
 

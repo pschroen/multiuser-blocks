@@ -25,5 +25,6 @@ export const store = {
 
 export const layers = {
 	default: 0,
-	picking: 1
+	buffers: 1,
+	picking: 2
 };

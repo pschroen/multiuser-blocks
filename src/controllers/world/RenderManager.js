@@ -1,12 +1,12 @@
 import { MathUtils, Mesh, OrthographicCamera, Vector2, WebGLRenderTarget } from 'three';
 import { tween } from '@alienkitty/space.js/three';
-import { BloomCompositeMaterial, FXAAMaterial, LuminosityMaterial, SMAABlendMaterial, SMAAEdgesMaterial, SMAAWeightsMaterial, UnrealBloomBlurMaterial } from '@alienkitty/alien.js/three';
+import { BloomCompositeMaterial, DrawBuffers, FXAAMaterial, LuminosityMaterial, MotionBlurCompositeMaterial, SMAABlendMaterial, SMAAEdgesMaterial, SMAAWeightsMaterial, UnrealBloomBlurMaterial } from '@alienkitty/alien.js/three';
 
 import { WorldController } from './WorldController.js';
 import { CompositeMaterial } from '../../materials/CompositeMaterial.js';
 import { DirtMaterial } from '../../materials/DirtMaterial.js';
 
-import { isHighQuality } from '../../config/Config.js';
+import { isHighQuality, layers } from '../../config/Config.js';
 
 const BlurDirectionX = new Vector2(1, 0);
 const BlurDirectionY = new Vector2(0, 1);
@@ -71,6 +71,15 @@ export class RenderManager {
 			}
 
 			this.renderTargetA.depthBuffer = true;
+
+			// G-Buffer
+			this.drawBuffers = new DrawBuffers(this.renderer, this.scene, this.camera, layers.buffers, {
+				cameraBlur: false
+			});
+
+			// Motion blur composite material
+			this.motionBlurCompositeMaterial = new MotionBlurCompositeMaterial(textureLoader);
+			this.motionBlurCompositeMaterial.uniforms.tVelocity.value = this.drawBuffers.renderTarget.textures[1];
 
 			// Luminosity high pass material
 			this.luminosityMaterial = new LuminosityMaterial();
@@ -152,6 +161,9 @@ export class RenderManager {
 		if (isHighQuality) {
 			this.renderTargetB.setSize(width, height);
 
+			this.drawBuffers.setSize(width, height);
+
+			// Unreal bloom
 			width = MathUtils.floorPowerOfTwo(width) / 2;
 			height = MathUtils.floorPowerOfTwo(height) / 2;
 
@@ -178,11 +190,6 @@ export class RenderManager {
 
 		const renderTargetA = this.renderTargetA;
 
-		// Scene pass
-		renderer.setRenderTarget(renderTargetA);
-		renderer.clear();
-		renderer.render(scene, camera);
-
 		if (isHighQuality) {
 			const renderTargetB = this.renderTargetB;
 			const renderTargetBright = this.renderTargetBright;
@@ -191,8 +198,27 @@ export class RenderManager {
 			const renderTargetsHorizontal = this.renderTargetsHorizontal;
 			const renderTargetsVertical = this.renderTargetsVertical;
 
+			// G-Buffer layer
+			camera.layers.set(layers.buffers);
+
+			this.drawBuffers.update();
+
+			// Scene layer
+			camera.layers.set(layers.default);
+
+			renderer.setRenderTarget(renderTargetA);
+			renderer.clear();
+			renderer.render(scene, camera);
+
+			// Motion blur pass
+			this.motionBlurCompositeMaterial.uniforms.tMap.value = renderTargetA.texture;
+			this.screen.material = this.motionBlurCompositeMaterial;
+			renderer.setRenderTarget(renderTargetB);
+			renderer.clear();
+			renderer.render(this.screen, this.screenCamera);
+
 			// Extract bright areas
-			this.luminosityMaterial.uniforms.tMap.value = renderTargetA.texture;
+			this.luminosityMaterial.uniforms.tMap.value = renderTargetB.texture;
 			this.screen.material = this.luminosityMaterial;
 			renderer.setRenderTarget(renderTargetBright);
 			renderer.clear();
@@ -226,9 +252,9 @@ export class RenderManager {
 			renderer.render(this.screen, this.screenCamera);
 
 			// Composite pass
-			this.compositeMaterial.uniforms.tScene.value = renderTargetA.texture;
+			this.compositeMaterial.uniforms.tScene.value = renderTargetB.texture;
 			this.screen.material = this.compositeMaterial;
-			renderer.setRenderTarget(renderTargetB);
+			renderer.setRenderTarget(renderTargetA);
 			renderer.clear();
 			renderer.render(this.screen, this.screenCamera);
 
@@ -236,7 +262,7 @@ export class RenderManager {
 			renderer.render(this.displayScene, this.displayCamera);
 
 			// SMAA edge detection pass
-			this.edgesMaterial.uniforms.tMap.value = renderTargetB.texture;
+			this.edgesMaterial.uniforms.tMap.value = renderTargetA.texture;
 			this.screen.material = this.edgesMaterial;
 			renderer.setRenderTarget(renderTargetEdges);
 			renderer.clear();
@@ -250,7 +276,7 @@ export class RenderManager {
 			renderer.render(this.screen, this.screenCamera);
 
 			// SMAA pass (render to screen)
-			this.smaaMaterial.uniforms.tMap.value = renderTargetB.texture;
+			this.smaaMaterial.uniforms.tMap.value = renderTargetA.texture;
 			this.screen.material = this.smaaMaterial;
 			renderer.setRenderTarget(null);
 			renderer.clear();
@@ -261,6 +287,11 @@ export class RenderManager {
 			this.screen.material = this.dirtMaterial;
 			renderer.render(this.screen, this.screenCamera);
 		} else {
+			// Scene pass
+			renderer.setRenderTarget(renderTargetA);
+			renderer.clear();
+			renderer.render(scene, camera);
+
 			// HUD scene
 			renderer.render(this.displayScene, this.displayCamera);
 

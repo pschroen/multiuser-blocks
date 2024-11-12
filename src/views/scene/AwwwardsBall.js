@@ -75,6 +75,7 @@ export class AwwwardsBall extends Group {
 		const mesh = new Mesh(geometry, material);
 		mesh.castShadow = true;
 		mesh.receiveShadow = true;
+		mesh.layers.enable(layers.buffers);
 		mesh.layers.enable(layers.picking);
 		this.add(mesh);
 
