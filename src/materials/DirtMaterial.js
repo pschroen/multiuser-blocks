@@ -35,9 +35,11 @@ ${rgbshift}
 ${dither}
 
 void main() {
-	float center = length(vUv - 0.5);
+	vec2 dir = 0.5 - vUv;
+	float dist = length(dir);
+	dist = clamp(smoothstep(0.2, 0.7, dist), 0.0, 1.0);
 
-	FragColor = getRGB(tBloom, vUv, center, 0.001 * uBloomDistortion);
+	FragColor = getRGB(tBloom, vUv, dist, 0.001 * uBloomDistortion);
 
 	// Dirt lens texture
 	if (uLensDirt) {
@@ -58,7 +60,7 @@ void main() {
 			vUv2.y += 0.5 * (1.0 - heightRatio);
 		}
 
-		FragColor.rgb += smoothstep(0.0, 0.4, FragColor.rgb) * texture(tLensDirt, vUv2).rgb;
+		FragColor.rgb += smoothstep(0.0, 0.4, FragColor.rgb) * texture(tLensDirt, vUv2).rgb * dist;
 	}
 
 	// Dithering
