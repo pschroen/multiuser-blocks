@@ -41,6 +41,13 @@ export class ScenePhysicsController extends OimoPhysicsController {
 		this.halfScreen = new Vector2();
 		this.screenSpacePosition = new Vector3();
 
+		this.last = performance.now();
+		this.time = 0;
+		this.delta = 0;
+		this.count = 0;
+		this.prev = 0;
+		this.fps = 0;
+
 		// Promise with resolvers
 		// this.promise
 		// this.resolve
@@ -271,6 +278,18 @@ export class ScenePhysicsController extends OimoPhysicsController {
 		}
 
 		this.buffer.push(array);
+
+		this.time = performance.now();
+		this.delta = this.time - this.last;
+		this.last = this.time;
+
+		if (this.time - 1000 > this.prev) {
+			this.fps = Math.round(this.count * 1000 / (this.time - this.prev));
+			this.prev = this.time;
+			this.count = 0;
+		}
+
+		this.count++;
 	};
 
 	onContact = ({ body, force }) => {

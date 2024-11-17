@@ -1,5 +1,6 @@
 import { PanelItem, Stage, brightness, getKeyByValue } from '@alienkitty/space.js/three';
 
+import { SceneController } from '../scene/SceneController.js';
 import { RenderManager } from '../world/RenderManager.js';
 
 export class PanelController {
@@ -45,13 +46,28 @@ export class PanelController {
 			{
 				type: 'graph',
 				name: 'FPS',
-				noText: true
+				noText: true,
+				noHover: true
+			},
+			{
+				type: 'graph',
+				name: 'Server',
+				range: 180,
+				value: SceneController.physics.fps,
+				noHover: true,
+				callback: (value, item) => {
+					const thread = SceneController.physics.fps;
+
+					item.update(thread);
+					item.setValue(thread);
+				}
 			},
 			{
 				type: 'graph',
 				name: 'MS',
 				range: 150,
 				value: performance.now(),
+				noHover: true,
 				callback: (value, item) => {
 					const time = performance.now();
 					const ms = time - value;
@@ -67,6 +83,7 @@ export class PanelController {
 				name: 'MEM',
 				range: 300,
 				value: performance.memory,
+				noHover: true,
 				callback: (value, item) => {
 					const mem = value.usedJSHeapSize / Math.pow(1000, 2);
 
