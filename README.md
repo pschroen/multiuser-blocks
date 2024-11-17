@@ -10,6 +10,13 @@ Fixes and updates, additional UI elements, support for more connections, and an 
 
 [https://multiuser-blocks.glitch.me/?observer&orbit](https://multiuser-blocks.glitch.me/?observer&orbit)
 
+## Keyboard shortcuts
+
+**Esc**: Toggle details.  
+**Control-0**: Toggle UI.  
+
+There is also a way to show the trackers with the UI hidden, press **Esc** to show the details and then press **Control-0** to hide the UI.
+
 #### Dev notes
 
 This is a remix of Multiuser Fluid  
