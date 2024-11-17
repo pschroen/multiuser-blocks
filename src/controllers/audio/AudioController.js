@@ -1,5 +1,5 @@
 import { Matrix4, Object3D } from 'three';
-import { Sound3D, WebAudio, clamp, delayedCall, mapLinear, tween } from '@alienkitty/space.js/three';
+import { Sound3D, WebAudio, clamp, delayedCall, smootherstep, tween } from '@alienkitty/space.js/three';
 
 import { store } from '../../config/Config.js';
 
@@ -69,7 +69,7 @@ export class AudioController {
 				gong.quaternion.copy(object.quaternion);
 				gong.updateMatrixWorld();
 
-				const strength = clamp(mapLinear(force, 0, 4, 0, 1), 0, 1);
+				const strength = clamp(smootherstep(force, -1, 4), 0, 1);
 				gong.sound.gain.set(strength * 0.8);
 				gong.sound.playbackRate.set(clamp(0.8 + strength * 0.4, 0.8, 1.2));
 				gong.sound.play();
