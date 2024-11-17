@@ -43,10 +43,38 @@ export class PanelController {
 
 		const items = [
 			{
-				name: 'FPS'
+				type: 'graph',
+				name: 'FPS',
+				noText: true
 			},
 			{
-				type: 'divider'
+				type: 'graph',
+				name: 'MS',
+				range: 150,
+				value: performance.now(),
+				callback: (value, item) => {
+					const time = performance.now();
+					const ms = time - value;
+
+					item.update(ms);
+					item.setValue(ms);
+
+					return time;
+				}
+			},
+			{
+				type: 'graph',
+				name: 'MEM',
+				range: 300,
+				value: performance.memory,
+				callback: (value, item) => {
+					const mem = value.usedJSHeapSize / Math.pow(1000, 2);
+
+					item.update(mem);
+					item.setValue(mem);
+
+					return value;
+				}
 			},
 			{
 				type: 'color',
