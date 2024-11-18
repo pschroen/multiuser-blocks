@@ -1,4 +1,4 @@
-import { Color, Input, Interface, Panel, PanelItem, Stage, clearTween, delayedCall, tween } from '@alienkitty/space.js/three';
+import { Input, Interface, Panel, PanelItem, Stage, clearTween, delayedCall, tween } from '@alienkitty/space.js/three';
 
 import { breakpoint, isMobile, lightColor, store } from '../config/Config.js';
 import { formatColor } from '../utils/Utils.js';
@@ -17,12 +17,12 @@ export class PreloaderView extends Interface {
 
 	init() {
 		this.css({
-			position: 'absolute',
+			position: 'fixed',
 			left: 0,
 			top: 0,
 			width: '100%',
 			height: '100%',
-			zIndex: 100,
+			zIndex: 1,
 			pointerEvents: 'none'
 		});
 
@@ -48,9 +48,6 @@ export class PreloaderView extends Interface {
 		this.add(this.container);
 
 		this.panel = new Panel();
-		this.panel.css({
-			marginBottom: 30
-		});
 		this.container.add(this.panel);
 
 		const item = new PanelItem({
@@ -64,7 +61,7 @@ export class PreloaderView extends Interface {
 		this.colorPicker = item.view;
 
 		this.color = new Input({
-			placeholder: new Color(lightColor).getHexString(),
+			placeholder: store.placeholder,
 			maxlength: 6,
 			noTotal: true,
 			noLine: true
@@ -90,20 +87,16 @@ export class PreloaderView extends Interface {
 		});
 		this.container.add(this.number);
 
-		this.number.content = new Interface('.content');
-		this.number.content.css({
+		this.number.info = new Interface('.info', 'h2');
+		this.number.info.css({
 			position: 'absolute',
 			width: '100%',
-			fontSize: 'var(--ui-title-font-size)',
-			lineHeight: 25,
 			fontVariantNumeric: 'tabular-nums',
-			letterSpacing: 'var(--ui-title-letter-spacing)',
 			textAlign: 'center',
-			whiteSpace: 'nowrap',
-			opacity: 0.4
+			whiteSpace: 'nowrap'
 		});
-		this.number.content.text(0);
-		this.number.add(this.number.content);
+		this.number.info.text(0);
+		this.number.add(this.number.info);
 
 		this.title = new Interface('.title');
 		this.title.css({
@@ -118,20 +111,15 @@ export class PreloaderView extends Interface {
 		});
 		this.container.add(this.title);
 
-		this.title.content = new Interface('.content');
-		this.title.content.css({
+		this.title.info = new Interface('.info', 'h2');
+		this.title.info.css({
 			position: 'absolute',
 			width: '100%',
-			fontSize: 'var(--ui-title-font-size)',
-			lineHeight: 25,
-			letterSpacing: 'var(--ui-title-letter-spacing)',
 			textAlign: 'center',
-			textTransform: 'uppercase',
-			whiteSpace: 'nowrap',
-			opacity: 0.4
+			whiteSpace: 'nowrap'
 		});
-		this.title.content.text(isMobile ? 'Put on your headphones' : 'Turn up your speakers');
-		this.title.add(this.title.content);
+		this.title.info.text(isMobile ? 'Put on your headphones' : 'Turn up your speakers');
+		this.title.add(this.title.info);
 	}
 
 	addStartButton() {
@@ -150,7 +138,7 @@ export class PreloaderView extends Interface {
 				return;
 			}
 
-			this.title.content.text(text);
+			this.title.info.text(text);
 			this.title.css({ y: 10 }).tween({ y: 0, opacity: 1 }, 1000, 'easeOutCubic');
 		});
 	}
@@ -233,7 +221,7 @@ export class PreloaderView extends Interface {
 		clearTween(this);
 
 		tween(this, { progress }, 2000, 'easeInOutSine', null, () => {
-			this.number.content.text(Math.round(100 * this.progress));
+			this.number.info.text(Math.round(100 * this.progress));
 
 			if (this.progress === 1 && !this.isComplete) {
 				this.isComplete = true;

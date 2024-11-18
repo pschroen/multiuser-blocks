@@ -20,6 +20,7 @@ export const store = {
 	sound: true,
 	id: null,
 	color: '',
+	placeholder: '',
 	observer: false
 };
 

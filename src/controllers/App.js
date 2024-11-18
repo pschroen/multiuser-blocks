@@ -1,4 +1,4 @@
-import { BufferGeometryLoaderThread, ImageBitmapLoaderThread, Stage, Thread, UI, WebAudio, ticker, wait } from '@alienkitty/space.js/three';
+import { BufferGeometryLoaderThread, ImageBitmapLoaderThread, Interface, Stage, Thread, UI, WebAudio, clearTween, delayedCall, ticker, wait } from '@alienkitty/space.js/three';
 
 import { AudioController } from './audio/AudioController.js';
 import { WorldController } from './world/WorldController.js';
@@ -82,21 +82,44 @@ export class App {
 			details: {
 				background: true,
 				title: 'Multiuser Blocks'.replace(/[\s.]+/g, '_'),
-				content: /* html */ `
+				content: [
+					{
+						content: /* html */ `
 A follow-up experiment to Multiuser Fluid. Multiuser Blocks is an experiment to combine physics, UI and data visualization elements in a multiuser environment.
-				`,
-				links: [
-					{
-						title: 'Source code',
-						link: 'https://github.com/pschroen/multiuser-blocks'
+						`,
+						links: [
+							{
+								title: 'Source code',
+								link: 'https://github.com/pschroen/multiuser-blocks'
+							}
+						]
 					},
 					{
-						title: 'Multiuser Fluid',
-						link: 'https://github.com/pschroen/multiuser-fluid'
+						title: 'Development',
+						content: /* html */ `
+Space.js
+<br>Alien.js
+<br>Three.js
+<br>OimoPhysics
+						`
 					},
 					{
-						title: 'OimoPhysics',
-						link: 'https://github.com/saharan/OimoPhysics'
+						title: 'Fonts',
+						content: /* html */ `
+Roboto Mono
+<br>D-DIN
+<br>Gothic A1
+						`
+					},
+					{
+						title: 'Audio',
+						content: /* html */ `
+AudioMicro
+						`
+					},
+					{
+						title: 'Users',
+						width: '100%'
 					}
 				]
 			},
@@ -105,6 +128,7 @@ A follow-up experiment to Multiuser Fluid. Multiuser Blocks is an experiment to 
 				sound: store.sound
 			}
 		});
+		this.ui.css({ position: 'static' });
 		Stage.add(this.ui);
 
 		this.color = new HeaderColor(this.display);
@@ -114,6 +138,18 @@ A follow-up experiment to Multiuser Fluid. Multiuser Blocks is an experiment to 
 		});
 		this.ui.header.add(this.color);
 		this.ui.header.color = this.color;
+
+		const content = new Interface('.content');
+		content.css({
+			width: 'fit-content'
+		});
+		this.ui.detailsUsers = this.ui.details.content[this.ui.details.content.length - 1].add(content);
+		this.ui.detailsUsers.css({
+			position: 'relative',
+			display: 'flex',
+			flexWrap: 'wrap',
+			gap: 12
+		});
 	}
 
 	static initControllers() {
@@ -161,14 +197,32 @@ A follow-up experiment to Multiuser Fluid. Multiuser Blocks is an experiment to 
 	};
 
 	static onDetails = ({ open }) => {
+		clearTween(this.timeout);
+
 		if (open) {
+			document.documentElement.classList.add('scroll');
+
+			this.ui.detailsUsers.children.forEach((child, i) => {
+				child.enable();
+				child.animateIn(1075 + i * 15, true);
+			});
+
 			this.trackers.animateIn();
 
 			if (store.sound) {
 				AudioController.trigger('about_section');
 			}
 		} else {
-			if (this.ui.animatedIn) { // Keep trackers when UI is hidden
+			this.timeout = delayedCall(400, () => {
+				document.documentElement.classList.remove('scroll');
+
+				this.ui.detailsUsers.children.forEach(child => {
+					child.disable();
+				});
+			});
+
+			// Keep trackers when UI is hidden
+			if (this.ui.animatedIn) {
 				this.trackers.animateOut();
 			}
 
