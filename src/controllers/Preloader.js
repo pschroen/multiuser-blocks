@@ -1,9 +1,13 @@
-import { AssetLoader, MultiLoader, Stage } from '@alienkitty/space.js/three';
+import { AssetLoader, Color, MultiLoader, Stage } from '@alienkitty/space.js/three';
 
 import { PreloaderView } from '../views/PreloaderView.js';
 
+import { lightColor, store } from '../config/Config.js';
+
 export class Preloader {
 	static init() {
+		store.placeholder = new Color(lightColor).getHexString();
+
 		this.initStage();
 		this.initView();
 		this.initLoader();

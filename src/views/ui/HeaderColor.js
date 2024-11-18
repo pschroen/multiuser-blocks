@@ -1,5 +1,5 @@
 import { Vector2 } from 'three';
-import { Color, Input, Interface, Panel, PanelItem, Stage, clearTween, delayedCall } from '@alienkitty/space.js/three';
+import { Input, Interface, Panel, PanelItem, Stage, clearTween, delayedCall } from '@alienkitty/space.js/three';
 
 import { lightColor, store } from '../../config/Config.js';
 import { formatColor } from '../../utils/Utils.js';
@@ -36,9 +36,9 @@ export class HeaderColor extends Interface {
 			top: 10,
 			fontSize: 'var(--ui-secondary-font-size)',
 			letterSpacing: 'var(--ui-secondary-letter-spacing)',
+			color: 'var(--ui-secondary-color)',
 			webkitUserSelect: 'none',
-			userSelect: 'none',
-			opacity: 'var(--ui-secondary-opacity)'
+			userSelect: 'none'
 		});
 		this.add(this.latency);
 
@@ -64,7 +64,7 @@ export class HeaderColor extends Interface {
 		this.colorPicker.swatch.invisible();
 
 		this.color = new Input({
-			placeholder: new Color(lightColor).getHexString(),
+			placeholder: store.placeholder,
 			maxlength: 6,
 			noTotal: true,
 			noLine: true

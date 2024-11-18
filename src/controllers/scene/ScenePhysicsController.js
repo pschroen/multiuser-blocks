@@ -7,6 +7,7 @@ import { Data } from '../../data/Data.js';
 import { Socket } from '../../data/Socket.js';
 import { SocketThread } from '../../data/SocketThread.js';
 import { AudioController } from '../audio/AudioController.js';
+import { DetailsUser } from '../../views/ui/DetailsUser.js';
 
 import { breakpoint, lightColor, numPointers, store } from '../../config/Config.js';
 import { formatColor, nearEqualsRGB } from '../../utils/Utils.js';
@@ -192,7 +193,14 @@ export class ScenePhysicsController extends OimoPhysicsController {
 				this.pointer[id].target.set(lightColor);
 				this.pointer[id].color.copy(this.pointer[id].target);
 				this.pointer[id].last.copy(this.pointer[id].color);
+
 				this.pointer[id].tracker = this.trackers.add(new Reticle());
+				this.pointer[id].info = this.ui.detailsUsers.add(new DetailsUser());
+
+				if (this.ui.isDetailsOpen) {
+					this.pointer[id].info.enable();
+					this.pointer[id].info.animateIn();
+				}
 
 				this.view.ball.color.copy(this.pointer[id].color);
 				this.view.ball.lights[i].color.copy(this.pointer[id].color);
@@ -204,16 +212,15 @@ export class ScenePhysicsController extends OimoPhysicsController {
 		// Update and prune
 		Object.keys(this.pointer).forEach(id => {
 			if (id === this.id) {
+				this.pointer[id].info.setData(Data.getUserData(id));
 				return;
 			}
 
 			if (ids.includes(id)) {
+				this.pointer[id].tracker.setData(Data.getReticleData(id));
+				this.pointer[id].info.setData(Data.getUserData(id));
+
 				const data = Data.getUser(id);
-
-				if (this.pointer[id].tracker) {
-					this.pointer[id].tracker.setData(Data.getReticleData(id));
-				}
-
 				const style = formatColor(data.color);
 
 				this.pointer[id].target.set(style || lightColor);
@@ -223,17 +230,18 @@ export class ScenePhysicsController extends OimoPhysicsController {
 					this.pointer[id].needsUpdate = true;
 				}
 			} else {
-				if (this.pointer[id].tracker) {
-					this.pointer[id].tracker.animateOut(() => {
-						if (this.pointer[id]) {
-							this.pointer[id].tracker.destroy();
+				const tracker = this.pointer[id].tracker;
+				const info = this.pointer[id].info;
 
-							delete this.pointer[id];
-						}
+				delete this.pointer[id];
+
+				tracker.animateOut(() => {
+					tracker.destroy();
+
+					info.animateOut(() => {
+						info.destroy();
 					});
-				} else {
-					delete this.pointer[id];
-				}
+				});
 			}
 		});
 	};
@@ -243,7 +251,7 @@ export class ScenePhysicsController extends OimoPhysicsController {
 			this.connected = true;
 			this.id = id;
 
-			store.id = id;
+			// store.id = id;
 
 			if (Number(id) !== numPointers) {
 				this.pointer[id] = {};
@@ -254,6 +262,8 @@ export class ScenePhysicsController extends OimoPhysicsController {
 				this.pointer[id].target.set(lightColor);
 				this.pointer[id].color.copy(this.pointer[id].target);
 				this.pointer[id].last.copy(this.pointer[id].color);
+
+				this.pointer[id].info = this.ui.detailsUsers.add(new DetailsUser());
 			} else {
 				store.observer = true;
 
@@ -364,10 +374,10 @@ export class ScenePhysicsController extends OimoPhysicsController {
 									this.pointer[id].needsUpdate = false;
 								}
 
+								this.screenSpacePosition.copy(this.object.position).project(this.camera).multiply(this.halfScreen);
+
 								if (id !== this.id) {
 									if (this.pointer[id].tracker) {
-										this.screenSpacePosition.copy(this.object.position).project(this.camera).multiply(this.halfScreen);
-
 										const centerX = this.halfScreen.x + this.screenSpacePosition.x;
 										const centerY = this.halfScreen.y - this.screenSpacePosition.y;
 
@@ -393,6 +403,15 @@ export class ScenePhysicsController extends OimoPhysicsController {
 									}
 
 									visibility = isDown ? 1.4 : 1;
+								}
+
+								if (this.pointer[id].info) {
+									this.pointer[id].info.setData(Data.getUserData(id), {
+										isDown,
+										x: this.object.position.x,
+										y: this.object.position.y,
+										z: this.object.position.z
+									});
 								}
 							} else {
 								visibility = 0;
