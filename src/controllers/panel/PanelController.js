@@ -79,21 +79,6 @@ export class PanelController {
 				}
 			},
 			{
-				type: 'graph',
-				name: 'MEM',
-				range: 300,
-				value: performance.memory,
-				noHover: true,
-				callback: (value, item) => {
-					const mem = value.usedJSHeapSize / Math.pow(1000, 2);
-
-					item.update(mem);
-					item.setValue(mem);
-
-					return value;
-				}
-			},
-			{
 				type: 'color',
 				value: this.scene.background,
 				callback: value => {
