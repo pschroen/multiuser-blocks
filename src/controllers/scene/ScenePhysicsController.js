@@ -195,6 +195,8 @@ export class ScenePhysicsController extends OimoPhysicsController {
 				this.pointer[id].last.copy(this.pointer[id].color);
 
 				this.pointer[id].tracker = this.trackers.add(new Reticle());
+				this.pointer[id].tracker.id = id;
+
 				this.pointer[id].info = this.ui.detailsUsers.add(new DetailsUser());
 
 				if (this.ui.isDetailsOpen) {
