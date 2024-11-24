@@ -408,7 +408,7 @@ export class ScenePhysicsController extends OimoPhysicsController {
 								}
 
 								if (this.pointer[id].info) {
-									this.pointer[id].info.setData(Data.getUserData(id), {
+									this.pointer[id].info.setData({
 										isDown,
 										x: this.object.position.x,
 										y: this.object.position.y,
