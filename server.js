@@ -127,6 +127,8 @@ function remove(ws) {
 	}
 
 	if (ws._mouse !== null) {
+		resetMouse(ws._mouse);
+
 		mousePool.put(ws._mouse);
 	}
 }
@@ -292,6 +294,8 @@ function ip2long(ip) {
 
 import { OimoPhysicsBuffer } from '@alienkitty/alien.js/three/oimophysics';
 
+const resetPosition = [0, 0, 0];
+
 const shapes = [
 	{ name: 'room_0', type: 'box', position: [-7, 0, 0], quaternion: [0, 0.13052619222005157, 0, 0.9914448613738104], size: [2.5, 12, 12], density: 0 },
 	{ name: 'room_1', type: 'box', position: [7, 0, 0], quaternion: [0, -0.13052619222005157, 0, 0.9914448613738104], size: [2.5, 12, 12], density: 0 },
@@ -410,6 +414,14 @@ const shapes = [
 const physics = new OimoPhysicsBuffer();
 
 shapes.forEach(shape => physics.add(shape));
+
+for (let i = 0; i < numPointers; i++) {
+	resetMouse(i);
+}
+
+function resetMouse(index) {
+	physics.setPosition(`mouse_${index}`, resetPosition);
+}
 
 //
 
