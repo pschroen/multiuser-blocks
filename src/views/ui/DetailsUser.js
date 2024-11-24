@@ -74,14 +74,26 @@ export class DetailsUser extends Interface {
 	}
 
 	addListeners() {
+		this.element.addEventListener('mouseenter', this.onHover);
+		this.element.addEventListener('mouseleave', this.onHover);
 		ticker.add(this.onUpdate);
 	}
 
 	removeListeners() {
+		this.element.removeEventListener('mouseenter', this.onHover);
+		this.element.removeEventListener('mouseleave', this.onHover);
 		ticker.remove(this.onUpdate);
 	}
 
 	// Event handlers
+
+	onHover = ({ type }) => {
+		if (type === 'mouseenter') {
+			Stage.events.emit('tracker', { select: this.data.id });
+		} else {
+			Stage.events.emit('tracker', { select: null });
+		}
+	};
 
 	onUpdate = () => {
 		this.graph.update(this.data.latency);

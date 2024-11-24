@@ -1,10 +1,12 @@
-import { Interface } from '@alienkitty/space.js/three';
+import { Interface, Stage, clearTween, delayedCall } from '@alienkitty/space.js/three';
 
 export class TrackersView extends Interface {
 	constructor() {
 		super('.trackers');
 
 		this.init();
+
+		this.addListeners();
 	}
 
 	init() {
@@ -21,6 +23,25 @@ export class TrackersView extends Interface {
 			opacity: 0
 		});
 	}
+
+	addListeners() {
+		Stage.events.on('tracker', this.onTracker);
+	}
+
+	// Event handlers
+
+	onTracker = ({ select }) => {
+		clearTween(this.timeout);
+
+		if (select) {
+			this.children.filter(child => child.id !== select).forEach(child => child.deactivate());
+			this.children.filter(child => child.id === select).forEach(child => child.activate());
+		} else {
+			this.timeout = delayedCall(200, () => {
+				this.children.forEach(child => child.activate());
+			});
+		}
+	};
 
 	// Public methods
 
