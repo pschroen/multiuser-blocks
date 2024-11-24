@@ -19,7 +19,7 @@ export class InputManager {
 		this.mouse = new Vector2();
 		this.target = new Vector3();
 		this.lerpSpeed = 0.03;
-		this.mobileOffset = isMobile ? 1 : 0; // Position above finger
+		this.mobileOffset = new Vector3(0, isMobile ? 1 : 0, 0); // Position above finger
 		this.hover = null;
 		this.selected = null;
 		this.isDown = false;
@@ -98,10 +98,12 @@ export class InputManager {
 			if (intersection.length) {
 				const point = intersection[0].point;
 
+				point.add(this.mobileOffset);
+
 				SceneController.motion({
 					isDown: this.isDown,
 					x: point.x,
-					y: point.y + this.mobileOffset,
+					y: point.y,
 					z: point.z
 				});
 			}
@@ -145,10 +147,12 @@ export class InputManager {
 					z: point.z
 				});
 
+				point.add(this.mobileOffset);
+
 				SceneController.motion({
 					isDown: this.isDown,
 					x: point.x,
-					y: point.y + this.mobileOffset,
+					y: point.y,
 					z: point.z
 				});
 
@@ -180,10 +184,12 @@ export class InputManager {
 			if (intersection.length) {
 				const point = intersection[0].point;
 
+				point.add(this.mobileOffset);
+
 				SceneController.motion({
 					isDown: this.isDown,
 					x: point.x,
-					y: point.y + this.mobileOffset,
+					y: point.y,
 					z: point.z
 				});
 			}
@@ -221,6 +227,8 @@ export class InputManager {
 
 			if (intersection.length) {
 				const point = intersection[0].point;
+
+				point.add(this.mobileOffset);
 
 				SceneController.physics.point.copy(point);
 			}
