@@ -385,7 +385,7 @@ export class ScenePhysicsController extends OimoPhysicsController {
 
 										this.pointer[id].tracker.css({ left: centerX, top: centerY });
 
-										if (!this.pointer[id].tracker.animatedIn) {
+										if (isMove && !this.pointer[id].tracker.animatedIn) {
 											this.pointer[id].tracker.animateIn();
 										}
 									}
