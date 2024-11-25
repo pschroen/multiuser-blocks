@@ -440,7 +440,7 @@ class Block {
 	// Event handlers
 
 	onContact = (body, name) => {
-		if (this.contact || elapsed < 1000) {
+		if (this.contact || elapsed < 3000) {
 			return;
 		}
 
