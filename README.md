@@ -4,13 +4,13 @@ A follow-up experiment to Multiuser Fluid. Multiuser Blocks is an experiment to 
 
 [https://multiuser-blocks.glitch.me/](https://multiuser-blocks.glitch.me/)
 
-## 2024 updates
+#### 2024 updates
 
 Fixes and updates, additional UI elements, support for more connections, and an observer mode.
 
 [https://multiuser-blocks.glitch.me/?observer&orbit](https://multiuser-blocks.glitch.me/?observer&orbit)
 
-## Keyboard shortcuts
+#### Keyboard shortcuts
 
 **Esc**: Toggle details.  
 **Control-0**: Toggle UI.  
