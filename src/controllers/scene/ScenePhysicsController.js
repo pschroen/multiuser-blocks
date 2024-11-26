@@ -432,6 +432,7 @@ export class ScenePhysicsController extends OimoPhysicsController {
 
 							this.view.ball.lights[j].position.copy(this.object.position);
 							this.view.ball.lights[j].intensity = strength;
+							this.view.ball.lights[j].distance = 4.4 * strength;
 							this.view.ball.lights[j].visible = !!strength;
 						} else {
 							this.object.scale.setScalar(j >= 30 ? 0.5 : 1);
