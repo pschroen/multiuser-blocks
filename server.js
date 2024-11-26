@@ -480,7 +480,7 @@ for (let i = 0; i < 63; i++) {
 
 import { performance } from 'perf_hooks';
 
-const timestep = 1000 / 61;
+const timestep = 1000 / 59;
 const byteLength = 8 * 4; // 8 * float32 for buffer size
 const startIndex = 1 + byteLength * 63; // event + size * blocks
 
