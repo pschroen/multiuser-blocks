@@ -284,7 +284,7 @@ export class ScenePhysicsController extends OimoPhysicsController {
 			return;
 		}
 
-		if (this.buffer.length > 3) {
+		if (this.buffer.length > 4) {
 			this.buffer.shift();
 		}
 
