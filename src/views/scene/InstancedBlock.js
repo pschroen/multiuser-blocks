@@ -179,7 +179,7 @@ export class InstancedBlock extends Group {
 
 		geometry.setAttribute('instanceRandom', new InstancedBufferAttribute(instanceRandom, 2));
 
-		mesh.computeBoundingSphere();
+		// mesh.computeBoundingSphere();
 
 		this.mesh = mesh;
 	}

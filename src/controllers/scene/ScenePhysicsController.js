@@ -446,7 +446,7 @@ export class ScenePhysicsController extends OimoPhysicsController {
 					}
 
 					object.instanceMatrix.needsUpdate = true;
-					object.computeBoundingSphere();
+					// object.computeBoundingSphere();
 				} else {
 					object.position.fromArray(array, index);
 					object.quaternion.fromArray(array, index + 3);
