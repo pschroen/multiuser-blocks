@@ -81,7 +81,7 @@ export class App {
 			},
 			details: {
 				background: true,
-				title: 'Multiuser Blocks'.replace(/[\s.]+/g, '_'),
+				title: 'Multiuser Blocks'.replace(/[\s.-]+/g, '_'),
 				content: [
 					{
 						content: /* html */ `
